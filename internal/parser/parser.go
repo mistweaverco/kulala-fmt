@@ -45,7 +45,7 @@ func parseSection(section string, document *Document) Section {
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
-			if in_request == false && in_body == false {
+			if !in_request && !in_body {
 				in_header = false
 				in_body = true
 			}
