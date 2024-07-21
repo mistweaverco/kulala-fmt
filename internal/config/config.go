@@ -1,8 +1,8 @@
 package config
 
 type ConfigFlags struct {
-	DryRun bool
-	Check  bool
+	Check   bool
+	Verbose bool
 }
 
 type Config struct {

@@ -34,8 +34,24 @@ Format all `.http` and `.rest` files in the current directory and its subdirecto
 kulala-fmt
 ```
 
+Format all `.http` and `.rest` files in the current directory and its subdirectories and
+prints the written output to the console:
+
+```sh
+kulala-fmt --verbose
+```
+
+
 Check if all `.http` and `.rest` files in the current directory and its subdirectories are formatted:
 
 ```sh
 kulala-fmt --check
+```
+
+Check if all `.http` and `.rest` files in the current directory and
+its subdirectories are formatted and
+prints the desired output to the console:
+
+```sh
+kulala-fmt --check --verbose
 ```

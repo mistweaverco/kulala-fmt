@@ -27,3 +27,9 @@ build-and-install-local-debug:
 
 run:
 	go run -ldflags "-X 'github.com/mistweaverco/kulala-fmt/cmd/kulalafmt.VERSION=development'" main.go
+
+run-check:
+	go run -ldflags "-X 'github.com/mistweaverco/kulala-fmt/cmd/kulalafmt.VERSION=development'" main.go --check
+
+run-check-verbose:
+	go run -ldflags "-X 'github.com/mistweaverco/kulala-fmt/cmd/kulalafmt.VERSION=development'" main.go --check --verbose
