@@ -55,7 +55,12 @@ func parseSection(section string, document *Document) Section {
 		} else if strings.HasPrefix(line, "# @") {
 			parsedSection.Metadata = append(parsedSection.Metadata, line)
 			continue
-		} else if strings.HasPrefix(line, "#") {
+		} else if strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") {
+			if strings.HasPrefix(line, "//") {
+				line = strings.TrimPrefix(line, "//")
+				line = strings.Trim(line, " ")
+				line = "# " + line
+			}
 			parsedSection.Comments = append(parsedSection.Comments, line)
 			continue
 		} else if isRequestLine(line) {
@@ -70,6 +75,10 @@ func parseSection(section string, document *Document) Section {
 			continue
 		} else if in_header {
 			if strings.Contains(line, ":") {
+				line = strings.Trim(line, " ")
+				splits := strings.Split(line, ":")
+				splits[0] = strings.ToLower(splits[0])
+				line = strings.Join(splits, ":")
 				parsedSection.Headers = append(parsedSection.Headers, line)
 			}
 		} else if in_body {
