@@ -22,9 +22,9 @@ An opinionated 🦄 .http and .rest 🐼 files linter 💄 and formatter ⚡.
 
 Just grab the latest release:
 
- - [Linux](https://github.com/mistweaverco/kulala-fmt/releases/download/latest/kulala-fmt-linux)
- - [Mac](https://github.com/mistweaverco/kulala-fmt/releases/download/latest/kulala-fmt-macos)
- - [Windows](https://github.com/mistweaverco/kulala-fmt/releases/download/latest/kulala-fmt.exe)
+ - [Linux](https://github.com/mistweaverco/kulala-fmt/releases/latest/download/kulala-fmt-linux)
+ - [Mac](https://github.com/mistweaverco/kulala-fmt/releases/latest/download/kulala-fmt-macos)
+ - [Windows](https://github.com/mistweaverco/kulala-fmt/releases/latest/download/kulala-fmt.exe)
 
 ## Usage
 
