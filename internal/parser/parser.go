@@ -91,7 +91,7 @@ func parseSection(section string, document *Document) Section {
 	return parsedSection
 }
 
-func validateSection(section Section, filepath string, document Document) {
+func validateSection(section Section, filepath string, document *Document) {
 	if section.Method == "" {
 		log.Error("Section is missing method", "file", filepath)
 		document.Valid = false
@@ -138,6 +138,10 @@ func documentToString(document Document) string {
 }
 
 func parser(filepath string, flags config.ConfigFlags) {
+	if !strings.HasSuffix(filepath, ".http") && !strings.HasSuffix(filepath, ".rest") {
+		log.Warn("File is not a .http or .rest file, skipping.", "file", filepath)
+		return
+	}
 	document := Document{
 		Valid:     true,
 		Variables: []string{},
@@ -155,7 +159,7 @@ func parser(filepath string, flags config.ConfigFlags) {
 		}
 		parsedSection := parseSection(section, &document)
 		document.Sections = append(document.Sections, parsedSection)
-		validateSection(parsedSection, filepath, document)
+		validateSection(parsedSection, filepath, &document)
 	}
 	if !document.Valid {
 		log.Error("File is not valid, can't fix, skipping.", "file", filepath)

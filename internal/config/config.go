@@ -3,6 +3,7 @@ package config
 type ConfigFlags struct {
 	Check   bool
 	Verbose bool
+	Version bool
 }
 
 type Config struct {

@@ -16,7 +16,13 @@ func isHttpClientEnvJson(filepath string) bool {
 	return strings.HasSuffix(filepath, "http-client.env.json")
 }
 
-func Start(flags config.ConfigFlags) {
+func Start(flags config.ConfigFlags, files []string) {
+	for _, filepath := range files {
+		parser(filepath, flags)
+	}
+}
+
+func StartAllFiles(flags config.ConfigFlags) {
 	filepath_pkgs, _ := filewalker.GetFiles()
 	for _, filepath_pkg := range filepath_pkgs {
 		dirpath := getDirectoryPath(filepath_pkg[0])
