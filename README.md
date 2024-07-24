@@ -91,3 +91,26 @@ kulala-fmt --check --verbose file1.http file2.rest http/*.http
 
 If run on all files it also warns when it finds both `.env` and `http-client.env.json`
 files in the same directory, because that might cause unexpected behavior.
+
+## Use it with conform.nvim
+
+```lua
+return {
+  "stevearc/conform.nvim",
+  config = function()
+    require("conform").setup({
+      formatters = {
+        kulala = {
+          command = "kulala-fmt",
+          args = { "$FILENAME" },
+          stdin = false,
+        },
+      },
+      formatters_by_ft = {
+        http = { "kulala" },
+      },
+      format_on_save = true,
+    })
+  end,
+}
+```
