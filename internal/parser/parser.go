@@ -43,7 +43,7 @@ func parseSection(section string, document *Document) Section {
 	}
 	lines := strings.Split(section, "\n")
 	for lineidx, line := range lines {
-		if line == "" {
+		if line == "" && !in_body {
 			if !in_request && !in_body {
 				in_header = false
 				in_body = true
@@ -116,6 +116,11 @@ func documentToString(document Document) string {
 		for _, comment := range section.Comments {
 			documentString += comment + "\n"
 		}
+		for _, metadata := range section.Metadata {
+			if strings.HasPrefix(metadata, "# @name ") {
+				documentString += metadata + "\n"
+			}
+		}
 		documentString += section.Method + " " + section.URL
 		if section.Version != "" {
 			documentString += " " + section.Version
@@ -125,6 +130,9 @@ func documentToString(document Document) string {
 			documentString += header + "\n"
 		}
 		for _, metadata := range section.Metadata {
+			if strings.HasPrefix(metadata, "# @name ") {
+				continue
+			}
 			documentString += metadata + "\n"
 		}
 		if section.Body != "" {
