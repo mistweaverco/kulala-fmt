@@ -118,6 +118,12 @@ func documentToString(document Document) string {
 		}
 		for _, metadata := range section.Metadata {
 			if strings.HasPrefix(metadata, "# @name ") {
+				continue
+			}
+			documentString += metadata + "\n"
+		}
+		for _, metadata := range section.Metadata {
+			if strings.HasPrefix(metadata, "# @name ") {
 				documentString += metadata + "\n"
 			}
 		}
@@ -128,12 +134,6 @@ func documentToString(document Document) string {
 		documentString += "\n"
 		for _, header := range section.Headers {
 			documentString += header + "\n"
-		}
-		for _, metadata := range section.Metadata {
-			if strings.HasPrefix(metadata, "# @name ") {
-				continue
-			}
-			documentString += metadata + "\n"
 		}
 		if section.Body != "" {
 			documentString += "\n" + section.Body + "\n"
