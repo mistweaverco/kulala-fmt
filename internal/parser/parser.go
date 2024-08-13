@@ -2,19 +2,32 @@ package parser
 
 import (
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/mistweaverco/kulala-fmt/internal/config"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
+
+type Header struct {
+	Name  string
+	Value string
+}
+
+type Metadata struct {
+	Name  string
+	Value string
+}
 
 type Section struct {
 	Comments []string
 	Method   string
 	URL      string
 	Version  string
-	Headers  []string
-	Metadata []string
+	Headers  []Header
+	Metadata []Metadata
 	Body     string
 }
 
@@ -22,6 +35,33 @@ type Document struct {
 	Variables []string
 	Sections  []Section
 	Valid     bool
+}
+
+var caser = cases.Title(language.Und)
+var metaDataRegex = regexp.MustCompile("^# @")
+
+func parseHTTPLine(line string) (method string, url string, version string) {
+	method = ""
+	url = ""
+	version = ""
+
+	pattern := `^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+(\S+)\s*(.*?)(HTTP/\d+\.?\d?)?$`
+
+	re := regexp.MustCompile(pattern)
+
+	matches := re.FindStringSubmatch(line)
+
+	if len(matches) > 0 {
+		method = matches[1]
+		url = matches[2]
+		if matches[4] != "" {
+			version = matches[4]
+		} else {
+			version = "HTTP/1.1" // Default to HTTP/1.1 if not provided
+		}
+	}
+
+	return method, url, version
 }
 
 func isRequestLine(line string) bool {
@@ -37,8 +77,8 @@ func parseSection(section string, document *Document) Section {
 		Method:   "",
 		URL:      "",
 		Version:  "",
-		Headers:  []string{},
-		Metadata: []string{},
+		Headers:  []Header{},
+		Metadata: []Metadata{},
 		Body:     "",
 	}
 	lines := strings.Split(section, "\n")
@@ -53,7 +93,13 @@ func parseSection(section string, document *Document) Section {
 			document.Variables = append(document.Variables, line)
 			continue
 		} else if strings.HasPrefix(line, "# @") {
-			parsedSection.Metadata = append(parsedSection.Metadata, line)
+			metadata := strings.Split(metaDataRegex.ReplaceAllString(line, ""), " ")
+			metaDataName := metadata[0]
+			metaDataValue := strings.Join(metadata[1:], " ")
+			parsedSection.Metadata = append(parsedSection.Metadata, Metadata{
+				Name:  metaDataName,
+				Value: metaDataValue,
+			})
 			continue
 		} else if strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") {
 			if strings.HasPrefix(line, "//") {
@@ -64,22 +110,27 @@ func parseSection(section string, document *Document) Section {
 			parsedSection.Comments = append(parsedSection.Comments, line)
 			continue
 		} else if isRequestLine(line) {
-			splits := strings.Split(line, " ")
-			parsedSection.Method = splits[0]
-			parsedSection.URL = splits[1]
-			if len(splits) > 2 {
-				parsedSection.Version = splits[2]
-			}
+			reqMethod, reqURL, reqVersion := parseHTTPLine(line)
+			parsedSection.Method = reqMethod
+			parsedSection.URL = reqURL
+			parsedSection.Version = reqVersion
 			in_request = false
 			in_header = true
 			continue
 		} else if in_header {
 			if strings.Contains(line, ":") {
+				httpVersion := parsedSection.Version
 				line = strings.Trim(line, " ")
 				splits := strings.Split(line, ":")
-				splits[0] = strings.ToLower(splits[0])
-				line = strings.Join(splits, ":")
-				parsedSection.Headers = append(parsedSection.Headers, line)
+				headerName := strings.ToLower(splits[0])
+				headerValue := strings.Join(splits[1:], ":")
+				if httpVersion != "HTTP/2" && httpVersion != "HTTP/3" {
+					headerName = caser.String(headerName)
+				}
+				parsedSection.Headers = append(parsedSection.Headers, Header{
+					Name:  headerName,
+					Value: headerValue,
+				})
 			}
 		} else if in_body {
 			parsedSection.Body += line
@@ -117,14 +168,14 @@ func documentToString(document Document) string {
 			documentString += comment + "\n"
 		}
 		for _, metadata := range section.Metadata {
-			if strings.HasPrefix(metadata, "# @name ") {
+			if metadata.Name == "name" {
 				continue
 			}
-			documentString += metadata + "\n"
+			documentString += "# @" + metadata.Name + " " + metadata.Value + "\n"
 		}
 		for _, metadata := range section.Metadata {
-			if strings.HasPrefix(metadata, "# @name ") {
-				documentString += metadata + "\n"
+			if metadata.Name == "name" {
+				documentString += "# @" + metadata.Name + " " + metadata.Value + "\n"
 			}
 		}
 		documentString += section.Method + " " + section.URL
@@ -133,7 +184,7 @@ func documentToString(document Document) string {
 		}
 		documentString += "\n"
 		for _, header := range section.Headers {
-			documentString += header + "\n"
+			documentString += header.Name + ": " + header.Value + "\n"
 		}
 		if section.Body != "" {
 			documentString += "\n" + section.Body + "\n"

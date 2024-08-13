@@ -85,9 +85,44 @@ kulala-fmt --check --verbose file1.http file2.rest http/*.http
 - Checks if the file is formatted and valid
 - Removes extraneous newlines
 - Makes sure document variables are at the top of the file
-- Lowercases all headers
-- Puts all metadata right after the headers
+- Lowercases all headers (when HTTP/2 or HTTP/3) else it will uppercase the first letter
+- Puts all metadata right before the request line
 - Ensures all comments are using `#` and not `//`
+- Ensures all comments are at the top of the request
+
+So a perfect request would look like this:
+
+```http
+@variables1=value1
+
+# This is a comment
+# This is another comment
+# @someother metatag
+# @name REQUEST_NAME_ONE
+GET http://localhost:8080/api/v1/health HTTP/1.1
+Content-Type: application/json
+
+{
+  "key": "value"
+}
+```
+
+or this:
+
+```http
+@variables1=value1
+
+# This is a comment
+# This is another comment
+# @someother metatag
+# @name REQUEST_NAME_ONE
+GET http://localhost:8080/api/v1/health HTTP/2
+content-type: application/json
+
+{
+  "key": "value"
+}
+```
 
 If run on all files it also warns when it finds both `.env` and `http-client.env.json`
 files in the same directory, because that might cause unexpected behavior.
