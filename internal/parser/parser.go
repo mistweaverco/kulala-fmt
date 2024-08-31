@@ -37,8 +37,10 @@ type Document struct {
 	Valid     bool
 }
 
-var caser = cases.Title(language.Und)
-var metaDataRegex = regexp.MustCompile("^# @")
+var (
+	caser         = cases.Title(language.Und)
+	metaDataRegex = regexp.MustCompile("^# @")
+)
 
 func parseHTTPLine(line string) (method string, url string, version string) {
 	method = ""
@@ -120,10 +122,10 @@ func parseSection(section string, document *Document) Section {
 		} else if in_header {
 			if strings.Contains(line, ":") {
 				httpVersion := parsedSection.Version
-				line = strings.Trim(line, " ")
+				line = strings.TrimSpace(line)
 				splits := strings.Split(line, ":")
 				headerName := strings.ToLower(splits[0])
-				headerValue := strings.Join(splits[1:], ":")
+				headerValue := strings.TrimSpace(strings.Join(splits[1:], ":"))
 				if httpVersion != "HTTP/2" && httpVersion != "HTTP/3" {
 					headerName = caser.String(headerName)
 				}
@@ -232,7 +234,7 @@ func parser(filepath string, flags config.ConfigFlags) {
 			if flags.Verbose {
 				log.Info("Writing", filepath, documentString)
 			}
-			err := os.WriteFile(filepath, []byte(documentString), 0644)
+			err := os.WriteFile(filepath, []byte(documentString), 0o644)
 			if err != nil {
 				log.Fatal("Error writing file", "error", err)
 			}
@@ -245,5 +247,4 @@ func parser(filepath string, flags config.ConfigFlags) {
 			}
 		}
 	}
-
 }
