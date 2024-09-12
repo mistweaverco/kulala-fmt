@@ -21,7 +21,7 @@ type Metadata struct {
 	Value string
 }
 
-type Section struct {
+type ParsedRequestBlock struct {
 	Comments []string
 	Method   string
 	URL      string
@@ -29,11 +29,12 @@ type Section struct {
 	Headers  []Header
 	Metadata []Metadata
 	Body     string
+	Delimiter string
 }
 
 type Document struct {
 	Variables []string
-	Sections  []Section
+	Blocks  []ParsedRequestBlock
 	Valid     bool
 }
 
@@ -47,7 +48,7 @@ func parseHTTPLine(line string) (method string, url string, version string) {
 	url = ""
 	version = ""
 
-	pattern := `^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+(\S+)\s*(.*?)(HTTP/\d+\.?\d?)?$`
+	pattern := `^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+(.*?)\s?(HTTP/\d+\.?\d?)?$`
 
 	re := regexp.MustCompile(pattern)
 
@@ -56,8 +57,8 @@ func parseHTTPLine(line string) (method string, url string, version string) {
 	if len(matches) > 0 {
 		method = matches[1]
 		url = matches[2]
-		if matches[4] != "" {
-			version = matches[4]
+		if matches[3] != "" {
+			version = matches[3]
 		} else {
 			version = "HTTP/1.1" // Default to HTTP/1.1 if not provided
 		}
@@ -67,14 +68,19 @@ func parseHTTPLine(line string) (method string, url string, version string) {
 }
 
 func isRequestLine(line string) bool {
-	return strings.HasPrefix(line, "GET") || strings.HasPrefix(line, "POST") || strings.HasPrefix(line, "PUT") || strings.HasPrefix(line, "DELETE")
+	return strings.HasPrefix(line, "GET") || strings.HasPrefix(line, "POST") || strings.HasPrefix(line, "PUT") || strings.HasPrefix(line, "DELETE") || strings.HasPrefix(line, "PATCH") || strings.HasPrefix(line, "HEAD") || strings.HasPrefix(line, "OPTIONS")
 }
 
-func parseSection(section string, document *Document) Section {
+type RequestBlock struct {
+	Content string
+	Delimiter string
+}
+
+func parseRequestBlock(requestBlock RequestBlock, document *Document) ParsedRequestBlock {
 	in_request := true
 	in_header := false
 	in_body := false
-	parsedSection := Section{
+	parsedRequestBlock := ParsedRequestBlock{
 		Comments: []string{},
 		Method:   "",
 		URL:      "",
@@ -82,8 +88,9 @@ func parseSection(section string, document *Document) Section {
 		Headers:  []Header{},
 		Metadata: []Metadata{},
 		Body:     "",
+		Delimiter: requestBlock.Delimiter,
 	}
-	lines := strings.Split(section, "\n")
+	lines := strings.Split(requestBlock.Content, "\n")
 	for lineidx, line := range lines {
 		if line == "" && !in_body {
 			if !in_request && !in_body {
@@ -98,7 +105,7 @@ func parseSection(section string, document *Document) Section {
 			metadata := strings.Split(metaDataRegex.ReplaceAllString(line, ""), " ")
 			metaDataName := metadata[0]
 			metaDataValue := strings.Join(metadata[1:], " ")
-			parsedSection.Metadata = append(parsedSection.Metadata, Metadata{
+			parsedRequestBlock.Metadata = append(parsedRequestBlock.Metadata, Metadata{
 				Name:  metaDataName,
 				Value: metaDataValue,
 			})
@@ -109,19 +116,19 @@ func parseSection(section string, document *Document) Section {
 				line = strings.Trim(line, " ")
 				line = "# " + line
 			}
-			parsedSection.Comments = append(parsedSection.Comments, line)
+			parsedRequestBlock.Comments = append(parsedRequestBlock.Comments, line)
 			continue
 		} else if isRequestLine(line) {
 			reqMethod, reqURL, reqVersion := parseHTTPLine(line)
-			parsedSection.Method = reqMethod
-			parsedSection.URL = reqURL
-			parsedSection.Version = reqVersion
+			parsedRequestBlock.Method = reqMethod
+			parsedRequestBlock.URL = reqURL
+			parsedRequestBlock.Version = reqVersion
 			in_request = false
 			in_header = true
 			continue
 		} else if in_header {
 			if strings.Contains(line, ":") {
-				httpVersion := parsedSection.Version
+				httpVersion := parsedRequestBlock.Version
 				line = strings.TrimSpace(line)
 				splits := strings.Split(line, ":")
 				headerName := strings.ToLower(splits[0])
@@ -129,27 +136,27 @@ func parseSection(section string, document *Document) Section {
 				if httpVersion != "HTTP/2" && httpVersion != "HTTP/3" {
 					headerName = caser.String(headerName)
 				}
-				parsedSection.Headers = append(parsedSection.Headers, Header{
+				parsedRequestBlock.Headers = append(parsedRequestBlock.Headers, Header{
 					Name:  headerName,
 					Value: headerValue,
 				})
 			}
 		} else if in_body {
-			parsedSection.Body += line
+			parsedRequestBlock.Body += line
 			if lineidx != len(lines)-1 {
-				parsedSection.Body += "\n"
+				parsedRequestBlock.Body += "\n"
 			}
 		}
 	}
-	return parsedSection
+	return parsedRequestBlock
 }
 
-func validateSection(section Section, filepath string, document *Document) {
-	if section.Method == "" {
+func validateSection(block ParsedRequestBlock, filepath string, document *Document) {
+	if block.Method == "" {
 		log.Error("Section is missing method", "file", filepath)
 		document.Valid = false
 	}
-	if section.URL == "" {
+	if block.URL == "" {
 		log.Error("Section is missing URL", "file", filepath)
 		document.Valid = false
 	}
@@ -164,35 +171,35 @@ func documentToString(document Document) string {
 			documentString += "\n"
 		}
 	}
-	sectionLength := len(document.Sections)
-	for idx, section := range document.Sections {
-		for _, comment := range section.Comments {
+	blocksLength := len(document.Blocks)
+	for idx, block := range document.Blocks {
+		for _, comment := range block.Comments {
 			documentString += comment + "\n"
 		}
-		for _, metadata := range section.Metadata {
+		for _, metadata := range block.Metadata {
 			if metadata.Name == "name" {
 				continue
 			}
 			documentString += "# @" + metadata.Name + " " + metadata.Value + "\n"
 		}
-		for _, metadata := range section.Metadata {
+		for _, metadata := range block.Metadata {
 			if metadata.Name == "name" {
 				documentString += "# @" + metadata.Name + " " + metadata.Value + "\n"
 			}
 		}
-		documentString += section.Method + " " + section.URL
-		if section.Version != "" {
-			documentString += " " + section.Version
+		documentString += block.Method + " " + block.URL
+		if block.Version != "" {
+			documentString += " " + block.Version
 		}
 		documentString += "\n"
-		for _, header := range section.Headers {
+		for _, header := range block.Headers {
 			documentString += header.Name + ": " + header.Value + "\n"
 		}
-		if section.Body != "" {
-			documentString += "\n" + section.Body + "\n"
+		if block.Body != "" {
+			documentString += "\n" + block.Body + "\n"
 		}
-		if idx != sectionLength-1 {
-			documentString += "\n###\n\n"
+		if idx != blocksLength-1 {
+			documentString += "\n"+block.Delimiter+"\n\n"
 		}
 	}
 	return documentString
@@ -206,30 +213,46 @@ func parser(filepath string, flags config.ConfigFlags) {
 	document := Document{
 		Valid:     true,
 		Variables: []string{},
-		Sections:  []Section{},
+		Blocks:  []ParsedRequestBlock{},
 	}
-	fileContents, err := os.ReadFile(filepath)
+	// read file contents as string
+	fileContentsBytes, err := os.ReadFile(filepath)
 	if err != nil {
 		log.Fatal("Error reading file", "error", err)
 	}
-	sections := strings.Split(string(fileContents), "###")
-	for _, section := range sections {
-		section = strings.TrimSpace(section)
-		if section == "" {
+	fileContents := string(fileContentsBytes)
+	re := regexp.MustCompile(`(?m)^###(?: .*)?$`)
+	delimiterMatches := re.FindAllStringIndex(fileContents, -1)
+	delimiters := re.FindAllString(fileContents, -1)
+	requestBlocks := []RequestBlock{}
+	start := 0
+	for i, match := range delimiterMatches {
+		requestBlocks = append(requestBlocks, RequestBlock{
+			Content: strings.TrimSpace(fileContents[start:match[0]]),
+			Delimiter: delimiters[i],
+		})
+		start = match[1]
+	}
+	requestBlocks = append(requestBlocks, RequestBlock{
+		Content: strings.TrimSpace(fileContents[start:]),
+		Delimiter: "",
+	})
+
+	for _, requestBlock := range requestBlocks {
+		if requestBlock.Content == "" {
 			continue
 		}
-		parsedSection := parseSection(section, &document)
-		document.Sections = append(document.Sections, parsedSection)
-		validateSection(parsedSection, filepath, &document)
+		parsedBlock := parseRequestBlock(requestBlock, &document)
+		document.Blocks = append(document.Blocks, parsedBlock)
+		validateSection(parsedBlock, filepath, &document)
 	}
 	if !document.Valid {
 		log.Error("File is not valid, can't fix, skipping.", "file", filepath)
 		return
 	}
-	fileContentsAsString := string(fileContents)
 	documentString := documentToString(document)
 	if !flags.Check {
-		if fileContentsAsString != documentString {
+		if fileContents != documentString {
 			log.Warn("File is not formatted correctly, fixing now.", "file", filepath)
 			if flags.Verbose {
 				log.Info("Writing", filepath, documentString)
@@ -240,7 +263,7 @@ func parser(filepath string, flags config.ConfigFlags) {
 			}
 		}
 	} else {
-		if fileContentsAsString != documentString {
+		if fileContents != documentString {
 			log.Warn("File is not formatted correctly", "file", filepath)
 			if flags.Verbose {
 				log.Info("Expected output", filepath, documentString)

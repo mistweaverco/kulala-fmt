@@ -19,3 +19,5 @@ http-client.env.json
 *.rest
 *.http
 
+# neovim session management
+.nvim
