@@ -41,4 +41,6 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&cfg.Flags.Check, "check", false, "check")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Flags.Verbose, "verbose", false, "verbose")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Flags.Version, "version", false, "version")
+	rootCmd.PersistentFlags().BoolVar(&cfg.Flags.InRequestVars, "inrequestvars", false, "inrequestvars")
+	rootCmd.PersistentFlags().BoolVar(&cfg.Flags.SeparateLogicalBlocks, "separatelogicalblocks", false, "separatelogicalblocks")
 }

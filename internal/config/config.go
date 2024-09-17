@@ -4,6 +4,8 @@ type ConfigFlags struct {
 	Check   bool
 	Verbose bool
 	Version bool
+	InRequestVars bool
+	SeparateLogicalBlocks bool
 }
 
 type Config struct {
