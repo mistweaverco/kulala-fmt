@@ -30,6 +30,9 @@ type ParsedRequestBlock struct {
 	Metadata []Metadata
 	Body     string
 	Delimiter string
+	Variables []string
+	LineNo int
+	UnmatchedLineCount int
 }
 
 type Document struct {
@@ -74,9 +77,10 @@ func isRequestLine(line string) bool {
 type RequestBlock struct {
 	Content string
 	Delimiter string
+	LineNo int
 }
 
-func parseRequestBlock(requestBlock RequestBlock, document *Document) ParsedRequestBlock {
+func parseRequestBlock(requestBlock RequestBlock, document *Document, flags config.ConfigFlags) ParsedRequestBlock {
 	in_request := true
 	in_header := false
 	in_body := false
@@ -89,6 +93,9 @@ func parseRequestBlock(requestBlock RequestBlock, document *Document) ParsedRequ
 		Metadata: []Metadata{},
 		Body:     "",
 		Delimiter: requestBlock.Delimiter,
+		Variables: []string{},
+		LineNo: requestBlock.LineNo,
+		UnmatchedLineCount: 0,
 	}
 	lines := strings.Split(requestBlock.Content, "\n")
 	for lineidx, line := range lines {
@@ -99,7 +106,11 @@ func parseRequestBlock(requestBlock RequestBlock, document *Document) ParsedRequ
 			}
 			continue
 		} else if strings.HasPrefix(line, "@") {
-			document.Variables = append(document.Variables, line)
+			if flags.InRequestVars {
+				parsedRequestBlock.Variables = append(parsedRequestBlock.Variables, line)
+			} else {
+				document.Variables = append(document.Variables, line)
+			}
 			continue
 		} else if strings.HasPrefix(line, "# @") {
 			metadata := strings.Split(metaDataRegex.ReplaceAllString(line, ""), " ")
@@ -146,23 +157,34 @@ func parseRequestBlock(requestBlock RequestBlock, document *Document) ParsedRequ
 			if lineidx != len(lines)-1 {
 				parsedRequestBlock.Body += "\n"
 			}
+		} else if strings.TrimSpace(line) != "" {
+			parsedRequestBlock.UnmatchedLineCount++
 		}
 	}
 	return parsedRequestBlock
 }
 
-func validateSection(block ParsedRequestBlock, filepath string, document *Document) {
+func validateSection(block ParsedRequestBlock, filepath string, document *Document, flags config.ConfigFlags) {
+	if flags.InRequestVars {
+		if block.Method == "" && block.URL == "" && block.UnmatchedLineCount == 0 && len(block.Variables) > 0 {
+			return
+		}
+	}
 	if block.Method == "" {
-		log.Error("Section is missing method", "file", filepath)
+		log.Error("Section is missing method", "file", filepath, "line", block.LineNo)
 		document.Valid = false
 	}
 	if block.URL == "" {
-		log.Error("Section is missing URL", "file", filepath)
+		log.Error("Section is missing URL", "file", filepath, "line", block.LineNo)
+		document.Valid = false
+	}
+	if block.UnmatchedLineCount > 0 {
+		log.Error("Section contains unmatched lines", "file", filepath, "line", block.LineNo)
 		document.Valid = false
 	}
 }
 
-func documentToString(document Document) string {
+func documentToString(document Document, flags config.ConfigFlags) string {
 	documentString := ""
 	variableLength := len(document.Variables)
 	for idx, variable := range document.Variables {
@@ -173,30 +195,54 @@ func documentToString(document Document) string {
 	}
 	blocksLength := len(document.Blocks)
 	for idx, block := range document.Blocks {
-		for _, comment := range block.Comments {
-			documentString += comment + "\n"
-		}
-		for _, metadata := range block.Metadata {
-			if metadata.Name == "name" {
-				continue
+		needsseparator := false
+		if len(block.Comments) > 0 {
+			for _, comment := range block.Comments {
+				documentString += comment + "\n"
 			}
-			documentString += "# @" + metadata.Name + " " + metadata.Value + "\n"
+			needsseparator = flags.SeparateLogicalBlocks
 		}
-		for _, metadata := range block.Metadata {
-			if metadata.Name == "name" {
+		if len(block.Variables) > 0 {
+			if needsseparator {
+				documentString += "\n"
+			}
+			for _, variable := range block.Variables {
+				documentString += variable + "\n"
+			}
+			needsseparator = flags.SeparateLogicalBlocks
+		}
+		if len(block.Metadata) > 0 {
+			if needsseparator {
+				documentString += "\n"
+			}
+			for _, metadata := range block.Metadata {
+				if metadata.Name == "name" {
+					continue
+				}
 				documentString += "# @" + metadata.Name + " " + metadata.Value + "\n"
 			}
+			for _, metadata := range block.Metadata {
+				if metadata.Name == "name" {
+					documentString += "# @" + metadata.Name + " " + metadata.Value + "\n"
+				}
+			}
+			needsseparator = flags.SeparateLogicalBlocks
 		}
-		documentString += block.Method + " " + block.URL
-		if block.Version != "" {
-			documentString += " " + block.Version
-		}
-		documentString += "\n"
-		for _, header := range block.Headers {
-			documentString += header.Name + ": " + header.Value + "\n"
-		}
-		if block.Body != "" {
-			documentString += "\n" + block.Body + "\n"
+		if block.Method != "" {
+			if needsseparator {
+				documentString += "\n"
+			}
+			documentString += block.Method + " " + block.URL
+			if block.Version != "" {
+				documentString += " " + block.Version
+			}
+			documentString += "\n"
+			for _, header := range block.Headers {
+				documentString += header.Name + ": " + header.Value + "\n"
+			}
+			if block.Body != "" {
+				documentString += "\n" + block.Body + "\n"
+			}
 		}
 		if idx != blocksLength-1 {
 			documentString += "\n"+block.Delimiter+"\n\n"
@@ -230,6 +276,7 @@ func parser(filepath string, flags config.ConfigFlags) {
 		requestBlocks = append(requestBlocks, RequestBlock{
 			Content: strings.TrimSpace(fileContents[start:match[0]]),
 			Delimiter: delimiters[i],
+			LineNo: strings.Count(fileContents[:start], "\n"),
 		})
 		start = match[1]
 	}
@@ -242,15 +289,15 @@ func parser(filepath string, flags config.ConfigFlags) {
 		if requestBlock.Content == "" {
 			continue
 		}
-		parsedBlock := parseRequestBlock(requestBlock, &document)
+		parsedBlock := parseRequestBlock(requestBlock, &document, flags)
 		document.Blocks = append(document.Blocks, parsedBlock)
-		validateSection(parsedBlock, filepath, &document)
+		validateSection(parsedBlock, filepath, &document, flags)
 	}
 	if !document.Valid {
 		log.Error("File is not valid, can't fix, skipping.", "file", filepath)
 		return
 	}
-	documentString := documentToString(document)
+	documentString := documentToString(document, flags)
 	if !flags.Check {
 		if fileContents != documentString {
 			log.Warn("File is not formatted correctly, fixing now.", "file", filepath)

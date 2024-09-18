@@ -41,4 +41,6 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&cfg.Flags.Check, "check", false, "check")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Flags.Verbose, "verbose", false, "verbose")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Flags.Version, "version", false, "version")
+	rootCmd.PersistentFlags().BoolVar(&cfg.Flags.InRequestVars, "in-request-vars", false, "don't enforce document variables to be at top of the file")
+	rootCmd.PersistentFlags().BoolVar(&cfg.Flags.SeparateLogicalBlocks, "separate-logical-blocks", false, "don't enforce trimming of all blank lines")
 }

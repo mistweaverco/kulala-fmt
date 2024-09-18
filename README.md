@@ -127,6 +127,58 @@ content-type: application/json
 If run on all files it also warns when it finds both `.env` and `http-client.env.json`
 files in the same directory, because that might cause unexpected behavior.
 
+## Formatting options
+
+You can tweak the formatter by using some flags.
+
+### separate-logical-blocks
+
+Logical blocks can be separated by a newline using `--separate-logical-blocks`. For example:
+
+```http
+@variables1=value1
+
+# This is a comment
+# This is another comment
+
+# @someother metatag
+# @name REQUEST_NAME_ONE
+
+GET http://localhost:8080/api/v1/health HTTP/1.1
+Content-Type: application/json
+
+{
+  "key": "value"
+}
+```
+
+### in-request-vars
+
+When using request variables (like optaining a token from a previous request)
+you may assign thie to a document after the request and
+don't force to put it at the top of the file.
+
+This can be done by using `--in-request-vars`
+
+```http
+###
+
+# @name login
+
+POST {{loginURL}} HTTP/1.1
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+client_secret={{clientSecret}}&client_id={{clientId}}&grant_type=client_credentials&scope={{scope}}
+
+###
+
+@token = {{login.response.body.$.access_token}}
+@tokentype = {{login.response.body.$.token_type}}
+
+###
+```
+
 ## Use it with conform.nvim
 
 ```lua
