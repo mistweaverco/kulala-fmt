@@ -129,7 +129,11 @@ files in the same directory, because that might cause unexpected behavior.
 
 ## Formatting options
 
-Logical blocks can be separated by a newline using `--separatelogicalblocks`. For example:
+You can tweak the formatter by using some flags.
+
+### separate-logical-blocks
+
+Logical blocks can be separated by a newline using `--separate-logical-blocks`. For example:
 
 ```http
 @variables1=value1
@@ -148,8 +152,13 @@ Content-Type: application/json
 }
 ```
 
-When using request variables (like optaining a token from a previous request) you may assign thie to a document after the request and don't force to put it at the top of the file.
-This can be done by using `--inrequestvars`
+### in-request-vars
+
+When using request variables (like optaining a token from a previous request)
+you may assign thie to a document after the request and
+don't force to put it at the top of the file.
+
+This can be done by using `--in-request-vars`
 
 ```http
 ###
