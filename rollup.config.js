@@ -1,4 +1,6 @@
 import typescript from "@rollup/plugin-typescript";
+import resolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
 const config = [
   {
     input: "src/cli.ts",
@@ -12,6 +14,8 @@ const config = [
         tsconfig: "./tsconfig.json",
         noForceEmit: true,
       }),
+      resolve(),
+      commonjs(),
     ],
   },
 ];
