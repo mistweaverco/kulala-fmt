@@ -1,20 +1,26 @@
+import pkg from "./../package.json";
 import { Command } from "commander";
+import { parse } from "./lib/parser";
 const program = new Command();
 
 program
-  .name("string-util")
-  .description("CLI to some JavaScript string utilities")
-  .version("0.8.0");
+  .name("kulala-fmt")
+  .description(
+    "An opinionated 🦄 .http and .rest 🐼 files linter 💄 and formatter ⚡.",
+  )
+  .version(pkg.version);
 
 program
-  .command("split")
-  .description("Split a string into substrings and display as an array")
-  .argument("<string>", "string to split")
-  .option("--first", "display just the first substring")
-  .option("-s, --separator <char>", "separator character", ",")
-  .action((str, options) => {
-    const limit = options.first ? 1 : undefined;
-    console.log(str.split(options.separator, limit));
+  .command("check")
+  .description("Check if files are well formatted")
+  .argument("[files]", "files to include", null)
+  .option("-v, --verbose", "enable verbose mode", false)
+  .action((files, options) => {
+    const parsed = parse(files);
+    if (options.verbose) {
+      console.log("verbose mode is on");
+    }
+    console.log(parsed);
   });
 
 program.parse();

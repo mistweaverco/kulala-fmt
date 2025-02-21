@@ -1,5 +1,6 @@
 {
   "name": "@mistweaverco/kulala-fmt",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.2",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-typescript": "^12.1.2",
     "@types/bun": "latest",

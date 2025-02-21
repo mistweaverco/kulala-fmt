@@ -1,3 +1,4 @@
+import json from "@rollup/plugin-json";
 import typescript from "@rollup/plugin-typescript";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
@@ -7,13 +8,14 @@ const config = [
     output: {
       file: "dist/cli.cjs",
       format: "cjs",
-      sourcemap: true,
+      sourcemap: false,
     },
     plugins: [
       typescript({
         tsconfig: "./tsconfig.json",
         noForceEmit: true,
       }),
+      json(),
       resolve(),
       commonjs(),
     ],
