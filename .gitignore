@@ -16,8 +16,8 @@ go.work
 
 .env
 http-client.env.json
+http-client.private.env.json
 *.rest
 *.http
 
-# neovim session management
-.nvim
+node_modules

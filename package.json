@@ -1,0 +1,17 @@
+{
+  "name": "@mistweaverco/kulala-fmt",
+  "module": "dist/cli.js",
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@types/bun": "latest",
+    "rollup": "^4.34.8",
+    "tslib": "^2.8.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
