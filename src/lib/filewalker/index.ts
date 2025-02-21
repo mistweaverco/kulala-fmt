@@ -10,13 +10,19 @@ import * as path from "path";
  */
 export function fileWalker(dirPath: string, extensions: string[]): string[] {
   const filePaths: string[] = [];
+  const rootPath = path.resolve(dirPath); // Store the absolute root path
 
   function walk(currentPath: string) {
     const files = fs.readdirSync(currentPath);
 
     for (const file of files) {
       const filePath = path.join(currentPath, file);
-      const stats = fs.statSync(filePath);
+      const stats = fs.lstatSync(filePath); // Use lstatSync to detect symlinks
+
+      // Skip symbolic links
+      if (stats.isSymbolicLink()) {
+        continue;
+      }
 
       if (stats.isDirectory()) {
         walk(filePath); // Recursive call for subdirectories
@@ -24,12 +30,14 @@ export function fileWalker(dirPath: string, extensions: string[]): string[] {
         // Ensure case-insensitive matching on the file extension
         const ext = path.extname(filePath).toLowerCase();
         if (extensions.includes(ext)) {
-          filePaths.push(filePath);
+          // Convert absolute path to relative path
+          const relativePath = path.relative(rootPath, filePath);
+          filePaths.push(relativePath);
         }
       }
     }
   }
 
-  walk(dirPath);
+  walk(rootPath);
   return filePaths;
 }

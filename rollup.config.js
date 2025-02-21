@@ -11,13 +11,15 @@ const config = [
       sourcemap: false,
     },
     plugins: [
+      json(),
+      commonjs(),
       typescript({
         tsconfig: "./tsconfig.json",
         noForceEmit: true,
       }),
-      json(),
-      resolve(),
-      commonjs(),
+      resolve({
+        preferBuiltins: true,
+      }),
     ],
   },
 ];
