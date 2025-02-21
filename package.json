@@ -3,7 +3,8 @@
   "module": "dist/cli.js",
   "type": "module",
   "scripts": {
-    "build": "rollup -c"
+    "build": "rollup -c",
+    "lint": "eslint ."
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.2",
