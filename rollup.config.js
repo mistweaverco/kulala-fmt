@@ -3,9 +3,9 @@ import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 const config = [
   {
-    input: "src/cli.ts",
+    input: "src/index.ts",
     output: {
-      file: "dist/cli.js",
+      file: "dist/cli.cjs",
       format: "cjs",
       sourcemap: true,
     },
