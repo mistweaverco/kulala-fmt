@@ -1,20 +1,26 @@
 import * as fs from "fs";
+import chalk from "chalk";
 import { fileWalker } from "./../filewalker";
 import { DocumentParser } from "./DocumentParser";
+import { DocumentBuilder } from "./DocumentBuilder";
+import { Diff } from "./Diff";
 
-type CheckedFiles = {
-  filepath: string;
-  isValid: boolean;
-};
-
-const isFileValid = (filepath: string): boolean => {
+const isFileValid = (filepath: string): [boolean, string, string] => {
   const content = fs.readFileSync(filepath, "utf-8");
   const document = DocumentParser.parse(content);
-  console.log(document.variables);
-  for (const block of document.blocks) {
-    console.log(block.request);
+  const build = DocumentBuilder.build(document);
+  return [content === build, content, build];
+};
+
+const fixFile = (filepath: string): boolean => {
+  const content = fs.readFileSync(filepath, "utf-8");
+  const document = DocumentParser.parse(content);
+  const build = DocumentBuilder.build(document);
+  const isValid = content === build;
+  if (!isValid) {
+    fs.writeFileSync(filepath, build, "utf-8");
   }
-  return true;
+  return !isValid;
 };
 
 /**
@@ -25,9 +31,10 @@ const isFileValid = (filepath: string): boolean => {
  * @returns {CheckedFiles[]} An array of CheckedFiles objects.
  */
 export const check = (
+  verbose: boolean = false,
   dirPath: string | null,
   extensions: string[] | undefined = undefined,
-): CheckedFiles[] => {
+): void => {
   if (!dirPath) {
     dirPath = process.cwd();
   }
@@ -35,10 +42,36 @@ export const check = (
     extensions = [".http", ".rest"];
   }
   const files = fileWalker(dirPath, extensions);
-  const checkedFiles: CheckedFiles[] = [];
   for (const file of files) {
-    const isValid = isFileValid(file);
-    checkedFiles.push({ filepath: file, isValid });
+    const [isValid, content, build] = isFileValid(file);
+    if (!isValid) {
+      console.log(chalk.red(`Invalid file: ${file}`));
+      if (verbose) {
+        Diff(build, content);
+      }
+    } else {
+      console.log(chalk.green(`Valid file: ${file}`));
+    }
   }
-  return checkedFiles;
+};
+
+export const format = (
+  dirPath: string | null,
+  extensions: string[] | undefined = undefined,
+): void => {
+  if (!dirPath) {
+    dirPath = process.cwd();
+  }
+  if (!extensions) {
+    extensions = [".http", ".rest"];
+  }
+  const files = fileWalker(dirPath, extensions);
+  for (const file of files) {
+    const neededFix = fixFile(file);
+    if (neededFix) {
+      console.log(chalk.yellow(`Formatted file: ${file}`));
+    } else {
+      console.log(chalk.green(`Valid file: ${file}`));
+    }
+  }
 };

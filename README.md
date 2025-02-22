@@ -20,49 +20,36 @@ An opinionated 🦄 .http and .rest 🐼 files linter 💄 and formatter ⚡.
 
 ## Install
 
-Just grab the latest release:
+Via npm:
 
- - [Linux](https://github.com/mistweaverco/kulala-fmt/releases/latest/download/kulala-fmt-linux)
- - [Mac](https://github.com/mistweaverco/kulala-fmt/releases/latest/download/kulala-fmt-macos)
- - [Windows](https://github.com/mistweaverco/kulala-fmt/releases/latest/download/kulala-fmt.exe)
+```sh
+npm install -g @mistweaverco/kulala-fmt
+```
 
 ## Usage
 
 Format all `.http` and `.rest` files in the current directory and its subdirectories:
 
 ```sh
-kulala-fmt
+kulala-fmt format
 ```
 
 Format specific `.http` and `.rest` files.
 
 ```sh
-kulala-fmt file1.http file2.rest http/*.http
-```
-
-Format all `.http` and `.rest` files in the current directory and its subdirectories and
-prints the written output to the console:
-
-```sh
-kulala-fmt --verbose
-```
-Format specific `.http` and `.rest` files and
-prints the written output to the console:
-
-```sh
-kulala-fmt --verbose file1.http file2.rest http/*.http
+kulala-fmt format file1.http file2.rest http/*.http
 ```
 
 Check if all `.http` and `.rest` files in the current directory and its subdirectories are formatted:
 
 ```sh
-kulala-fmt --check
+kulala-fmt check
 ```
 
 Check if specific `.http` and `.rest` files are formatted:
 
 ```sh
-kulala-fmt --check file1.http file2.rest http/*.http
+kulala-fmt check file1.http file2.rest http/*.http
 ```
 
 Check if all `.http` and `.rest` files in the current directory and
@@ -70,14 +57,14 @@ its subdirectories are formatted and
 prints the desired output to the console:
 
 ```sh
-kulala-fmt --check --verbose
+kulala-fmt check --verbose
 ```
 
 Check if specific `.http` and `.rest` files are formatted and
 prints the desired output to the console:
 
 ```sh
-kulala-fmt --check --verbose file1.http file2.rest http/*.http
+kulala-fmt check --verbose file1.http file2.rest http/*.http
 ```
 
 ## What does it do?
@@ -87,13 +74,13 @@ kulala-fmt --check --verbose file1.http file2.rest http/*.http
 - Makes sure document variables are at the top of the file
 - Lowercases all headers (when HTTP/2 or HTTP/3) else it will uppercase the first letter
 - Puts all metadata right before the request line
-- Ensures all comments are using `#` and not `//`
 - Ensures all comments are at the top of the request
 
 So a perfect request would look like this:
 
 ```http
-@variables1=value1
+@variables1 = value1
+
 
 # This is a comment
 # This is another comment
@@ -105,12 +92,15 @@ Content-Type: application/json
 {
   "key": "value"
 }
+
+###
 ```
 
 or this:
 
 ```http
 @variables1=value1
+
 
 # This is a comment
 # This is another comment
@@ -124,61 +114,6 @@ content-type: application/json
 }
 ```
 
-If run on all files it also warns when it finds both `.env` and `http-client.env.json`
-files in the same directory, because that might cause unexpected behavior.
-
-## Formatting options
-
-You can tweak the formatter by using some flags.
-
-### separate-logical-blocks
-
-Logical blocks can be separated by a newline using `--separate-logical-blocks`. For example:
-
-```http
-@variables1=value1
-
-# This is a comment
-# This is another comment
-
-# @someother metatag
-# @name REQUEST_NAME_ONE
-
-GET http://localhost:8080/api/v1/health HTTP/1.1
-Content-Type: application/json
-
-{
-  "key": "value"
-}
-```
-
-### in-request-vars
-
-When using request variables (like optaining a token from a previous request)
-you may assign thie to a document after the request and
-don't force to put it at the top of the file.
-
-This can be done by using `--in-request-vars`
-
-```http
-###
-
-# @name login
-
-POST {{loginURL}} HTTP/1.1
-Accept: application/json
-Content-Type: application/x-www-form-urlencoded
-
-client_secret={{clientSecret}}&client_id={{clientId}}&grant_type=client_credentials&scope={{scope}}
-
-###
-
-@token = {{login.response.body.$.access_token}}
-@tokentype = {{login.response.body.$.token_type}}
-
-###
-```
-
 ## Use it with conform.nvim
 
 ```lua
@@ -188,7 +123,7 @@ return {
     require("conform").setup({
       formatters = {
         kulala = {
-          command = "kulala-fmt",
+          command = "kulala-fmt format",
           args = { "$FILENAME" },
           stdin = false,
         },

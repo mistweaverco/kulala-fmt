@@ -1,12 +1,16 @@
 import Parser, { SyntaxNode, type Language } from "tree-sitter";
 import Kulala from "@mistweaverco/tree-sitter-kulala";
 
-// Define types
+interface Header {
+  key: string;
+  value: string;
+}
+
 interface Request {
   method: string;
   url: string;
   httpVersion: string;
-  headers: string[] | null;
+  headers: Header[];
   body: string | null;
 }
 
@@ -39,7 +43,7 @@ interface Block {
   responseRedirect: string | null;
 }
 
-interface Document {
+export interface Document {
   variables: Variable[];
   blocks: Block[];
 }
@@ -58,69 +62,161 @@ const parse = (content: string): Document => {
   parser.setLanguage(language);
 
   const tree = parser.parse(content);
-  const rootNode = tree.rootNode;
+  const documentNode = tree.rootNode;
 
   const variables: Variable[] = [];
   const blocks: Block[] = [];
 
-  traverseNodes(rootNode, (node) => {
-    const headers: string[] = [];
-    let method: string = "";
-    let url: string = "";
-    let httpVersion: string = "";
-    let body: string | null = null;
-    let responseRedirect: string | null = null;
+  const blockNodes = documentNode.children.filter(
+    (node) => node.type === "section",
+  );
 
-    const preRequestScripts: PreRequestScript[] = [];
-    const postRequestScripts: PostRequestScript[] = [];
-    const metadata: Metadata[] = [];
-    const comments: string[] = [];
+  blockNodes.forEach((bn) => {
+    const block: Block = {
+      metadata: [],
+      comments: [],
+      request: null,
+      preRequestScripts: [],
+      postRequestScripts: [],
+      responseRedirect: null,
+    };
 
-    if (node.type === "pre_request_script") {
-      let preRequestScript: PreRequestScript | null = null;
-      node.children.forEach((child) => {
-        switch (child.type) {
-          case "script":
-            preRequestScript = {
-              script: child.text,
-              inline: true,
-            };
-            break;
-          case "path":
-            preRequestScript = {
-              script: child.text,
-              inline: false,
-            };
-            break;
+    bn.children.forEach((node) => {
+      const headers: Header[] = [];
+      let method: string = "";
+      let url: string = "";
+      let httpVersion: string = "";
+      let body: string | null = null;
+
+      if (node.type === "pre_request_script") {
+        let preRequestScript: PreRequestScript | null = null;
+        node.children.forEach((child) => {
+          switch (child.type) {
+            case "script":
+              preRequestScript = {
+                script: child.text,
+                inline: true,
+              };
+              break;
+            case "path":
+              preRequestScript = {
+                script: child.text,
+                inline: false,
+              };
+              break;
+          }
+        });
+        if (preRequestScript) {
+          block.preRequestScripts.push(preRequestScript);
         }
-      });
-      if (preRequestScript) {
-        preRequestScripts.push(preRequestScript);
       }
-    }
-    if (node.type === "res_handler_script") {
-      let postRequestScript: PostRequestScript | null = null;
-      node.children.forEach((child) => {
-        switch (child.type) {
-          case "script":
-            postRequestScript = {
-              script: child.text,
-              inline: true,
-            };
-            break;
-          case "path":
-            postRequestScript = {
-              script: child.text,
-              inline: false,
-            };
-            break;
+      if (node.type === "comment") {
+        // normal comment
+        if (node.children.length === 0) {
+          block.comments.push(node.text);
         }
-      });
-      if (postRequestScript) {
-        postRequestScripts.push(postRequestScript);
+        let md: Metadata | null = null;
+        // metadata comments like `# @key value`
+        node.children.forEach((child) => {
+          switch (child.type) {
+            case "identifier":
+              md = {
+                key: child.text,
+                value: "",
+              };
+              break;
+            case "value":
+              if (md) {
+                md.value = child.text;
+              }
+              break;
+          }
+        });
+        if (md) {
+          block.metadata.push(md);
+        }
       }
-    }
 
+      if (node.type === "request") {
+        node.children.forEach((child) => {
+          let postRequestScript: PostRequestScript | null = null;
+          let parts, key, value;
+          switch (child.type) {
+            case "method":
+              method = child.text;
+              break;
+            case "target_url":
+              url = child.text;
+              break;
+            case "http_version":
+              httpVersion = child.text;
+              break;
+            case "header":
+              // a header string is in the format `key: value`
+              // for example, `Content-Type: application/json`
+              parts = child.text.split(":");
+              key = parts[0].trim();
+              // also make sure to take all parts after the first colon
+              value = parts.slice(1).join(":").trim();
+              headers.push({ key, value });
+              break;
+            case "res_redirect":
+              block.responseRedirect = child.text;
+              break;
+            case "res_handler_script":
+              child.children.forEach((c) => {
+                switch (c.type) {
+                  case "script":
+                    postRequestScript = {
+                      script: c.text,
+                      inline: true,
+                    };
+                    break;
+                  case "path":
+                    postRequestScript = {
+                      script: c.text,
+                      inline: false,
+                    };
+                    break;
+                }
+              });
+              if (postRequestScript) {
+                block.postRequestScripts.push(postRequestScript);
+              }
+              break;
+          }
+          if (child.type.endsWith("_body")) {
+            body = child.text;
+          }
+        });
+
+        if (method === "") {
+          method = "GET";
+        }
+
+        if (httpVersion === "") {
+          httpVersion = "HTTP/1.1";
+        }
+
+        block.request = {
+          method,
+          url,
+          httpVersion,
+          headers,
+          body,
+        };
+      }
+    });
+    if (
+      block.request ||
+      block.metadata.length > 0 ||
+      block.comments.length > 0
+    ) {
+      blocks.push(block);
+    }
+  });
+
+  traverseNodes(documentNode, (node) => {
     if (node.type === "variable_declaration") {
       let variable: Variable | null = null;
       // variables like `@key = value`
@@ -142,75 +238,6 @@ const parse = (content: string): Document => {
       if (variable) {
         variables.push(variable);
       }
-    }
-
-    if (node.type === "comment") {
-      // normal comment
-      if (node.children.length === 0) {
-        comments.push(node.text);
-      }
-      let metaData: Metadata | null = null;
-      // metadata comments like `# @key value`
-      node.children.forEach((child) => {
-        switch (child.type) {
-          case "identifier":
-            metaData = {
-              key: child.text,
-              value: "",
-            };
-            break;
-          case "value":
-            if (metaData) {
-              metaData.value = child.text;
-            }
-            break;
-        }
-      });
-      if (metaData) {
-        metadata.push(metaData);
-      }
-    }
-
-    if (node.type === "request") {
-      node.children.forEach((child) => {
-        switch (child.type) {
-          case "method":
-            method = child.text;
-            break;
-          case "target_url":
-            url = child.text;
-            break;
-          case "http_version":
-            httpVersion = child.text;
-            break;
-          case "header":
-            headers.push(child.text);
-            break;
-          case "res_redirect":
-            responseRedirect = child.text;
-            break;
-        }
-        if (child.type.endsWith("_body")) {
-          body = child.text;
-        }
-      });
-
-      const request: Request = {
-        method,
-        url,
-        httpVersion,
-        headers,
-        body,
-      };
-
-      blocks.push({
-        metadata,
-        comments,
-        request,
-        preRequestScripts,
-        postRequestScripts,
-        responseRedirect,
-      });
     }
   });
 
