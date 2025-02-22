@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "strict": true,
+    "outDir": "./dist",
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "target": "esnext",
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/*.ts", "src/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}
