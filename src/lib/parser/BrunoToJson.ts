@@ -1,4 +1,5 @@
 // @ts-nocheck
+/* eslint-disable */
 import * as ohm from "ohm-js";
 import * as _ from "lodash";
 const outdentString = (str: string) => {
@@ -112,7 +113,7 @@ const grammar = ohm.grammar(`Bru {
   bodyformurlencoded = "body:form-urlencoded" dictionary
   bodymultipart = "body:multipart-form" dictionary
   bodyfile = "body:file" dictionary
-  
+
   script = scriptreq | scriptres
   scriptreq = "script:pre-request" st* "{" nl* textblock tagend
   scriptres = "script:post-response" st* "{" nl* textblock tagend
