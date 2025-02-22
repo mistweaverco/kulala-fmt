@@ -87,18 +87,24 @@ export const format = (
   }
 };
 
+const convertToOpenAPI = (file: string): void => {
+  const json = getOpenAPISpecAsJSON(file);
+  const { documents, serverUrls } = OpenAPIParser.parse(json);
+  serverUrls.forEach((serverUrl, index) => {
+    const build = DocumentBuilder.build(documents[index]);
+    const outputFilename = file.replace(/\.[^/.]+$/, `.${serverUrl}.http`);
+    fs.writeFileSync(outputFilename, build, "utf-8");
+    console.log(chalk.green(`Converted file: ${file} --> ${outputFilename}`));
+  });
+};
+
 export const convert = (
   options: { from: string; to: string },
   files: string[],
 ): void => {
   for (const file of files) {
-    const json = getOpenAPISpecAsJSON(file);
-    const { documents, serverUrls } = OpenAPIParser.parse(json);
-    serverUrls.forEach((serverUrl, index) => {
-      const build = DocumentBuilder.build(documents[index]);
-      const outputFilename = file.replace(/\.[^/.]+$/, `.${serverUrl}.http`);
-      fs.writeFileSync(outputFilename, build, "utf-8");
-      console.log(chalk.green(`Converted file: ${file} --> ${outputFilename}`));
-    });
+    if (options.from === "openapi" && options.to === "http") {
+      convertToOpenAPI(file);
+    }
   }
 };
