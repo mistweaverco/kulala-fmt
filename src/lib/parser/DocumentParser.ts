@@ -29,7 +29,7 @@ interface PostRequestScript {
   inline: boolean;
 }
 
-interface Variable {
+export interface Variable {
   key: string;
   value: string;
 }
