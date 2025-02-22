@@ -6,8 +6,12 @@ import { DocumentParser } from "./DocumentParser";
 import { DocumentBuilder } from "./DocumentBuilder";
 import { Diff } from "./Diff";
 import { OpenAPIDocumentParser, OpenAPISpec } from "./OpenAPIDocumentParser";
+import { PostmanDocumentParser } from "./PostmanDocumentParser";
+import { BrunoDocumentParser } from "./BrunoDocumentParser";
 
 const OpenAPIParser = new OpenAPIDocumentParser();
+const PostmanParser = new PostmanDocumentParser();
+const BrunoParser = new BrunoDocumentParser();
 
 const getOpenAPISpecAsJSON = (filepath: string): OpenAPISpec => {
   if (filepath.endsWith(".yaml") || filepath.endsWith(".yml")) {
@@ -87,7 +91,7 @@ export const format = (
   }
 };
 
-const convertToOpenAPI = (files: string[]): void => {
+const convertFromOpenAPI = (files: string[]): void => {
   for (const file of files) {
     const json = getOpenAPISpecAsJSON(file);
     const { documents, serverUrls } = OpenAPIParser.parse(json);
@@ -95,9 +99,49 @@ const convertToOpenAPI = (files: string[]): void => {
       const build = DocumentBuilder.build(documents[index]);
       const outputFilename = file.replace(/\.[^/.]+$/, `.${serverUrl}.http`);
       fs.writeFileSync(outputFilename, build, "utf-8");
-      console.log(chalk.green(`Converted file: ${file} --> ${outputFilename}`));
+      console.log(
+        chalk.green(
+          `Converted OpenAPI spec file: ${file} --> ${outputFilename}`,
+        ),
+      );
     });
   }
+};
+
+const convertFromPostman = (files: string[]): void => {
+  for (const file of files) {
+    const json = JSON.parse(fs.readFileSync(file, "utf-8"));
+    const { document } = PostmanParser.parse(json);
+    const build = DocumentBuilder.build(document);
+    const outputFilename = file.replace(/\.[^/.]+$/, ".http");
+    fs.writeFileSync(outputFilename, build, "utf-8");
+    console.log(
+      chalk.green(
+        `Converted PostMan Collection file: ${file} --> ${outputFilename}`,
+      ),
+    );
+  }
+};
+
+const convertFromBruno = (files: string[]): void => {
+  const { documents, environmentNames, collectionName } = BrunoParser.parse(
+    files[0],
+  );
+  environmentNames.forEach((envName, idx) => {
+    const build = DocumentBuilder.build(documents[idx]);
+    const outputFilename = `${collectionName}.${envName}.http`;
+    fs.writeFileSync(outputFilename, build, "utf-8");
+    console.log(
+      chalk.green(
+        `Converted Bruno collection: ${files[0]} --> ${outputFilename}`,
+      ),
+    );
+  });
+};
+
+const invalidFormat = (t: "src" | "dest", format: string): void => {
+  console.log(chalk.red(`Invalid ${t} format ${format}.`));
+  process.exit(1);
 };
 
 export const convert = (
@@ -108,13 +152,31 @@ export const convert = (
     case "openapi":
       switch (options.to) {
         case "http":
-          convertToOpenAPI(files);
+          convertFromOpenAPI(files);
           break;
         default:
-          throw new Error("Invalid destination format.");
+          invalidFormat("dest", options.to);
+      }
+      break;
+    case "postman":
+      switch (options.to) {
+        case "http":
+          convertFromPostman(files);
+          break;
+        default:
+          invalidFormat("dest", options.to);
+      }
+      break;
+    case "bruno":
+      switch (options.to) {
+        case "http":
+          convertFromBruno(files);
+          break;
+        default:
+          invalidFormat("dest", options.to);
       }
       break;
     default:
-      throw new Error("Invalid source format.");
+      invalidFormat("src", options.from);
   }
 };

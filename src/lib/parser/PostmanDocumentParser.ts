@@ -63,8 +63,8 @@ interface PostmanCollection {
 }
 
 interface ParseResult {
-  documents: Document[];
-  collectionNames: string[];
+  document: Document;
+  collectionName: string;
 }
 
 export class PostmanDocumentParser {
@@ -207,8 +207,8 @@ export class PostmanDocumentParser {
     this.processItems(collection.item, document);
 
     return {
-      documents: [document],
-      collectionNames: [collection.info.name],
+      document: document,
+      collectionName: collection.info.name,
     };
   }
 }

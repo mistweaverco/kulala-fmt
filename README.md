@@ -79,10 +79,28 @@ kulala-fmt check --verbose file1.http file2.rest http/*.http
 
 ### Convert
 
+#### OpenAPI to `.http`
+
 Convert OpenAPI `.yaml`, `.yml` or `.json` files to `.http` files:
 
 ```sh
-kulala-fmt convert openapi.yaml
+kulala-fmt convert --from openapi openapi.yaml
+```
+
+#### Postman collection to `.http`
+
+Convert Postman collection `.json` files to `.http` files:
+
+```sh
+kulala-fmt convert --from postman postman.json
+```
+
+#### Bruno to `.http`
+
+Convert  `.bruno` files to `.http` files:
+
+```sh
+kulala-fmt convert --from bruno test.bru
 ```
 
 ## What does it do?
