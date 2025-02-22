@@ -123,8 +123,8 @@ return {
     require("conform").setup({
       formatters = {
         kulala = {
-          command = "kulala-fmt format",
-          args = { "$FILENAME" },
+          command = "kulala-fmt",
+          args = { "format", "$FILENAME" },
           stdin = false,
         },
       },
