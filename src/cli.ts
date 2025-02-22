@@ -1,6 +1,6 @@
 import pkg from "./../package.json";
 import { Command } from "commander";
-import { parse } from "./lib/parser";
+import { check } from "./lib/parser";
 const program = new Command();
 
 program
@@ -16,11 +16,11 @@ program
   .argument("[files]", "files to include", null)
   .option("-v, --verbose", "enable verbose mode", false)
   .action((files, options) => {
-    const parsed = parse(files);
+    const checked = check(files);
     if (options.verbose) {
       console.log("verbose mode is on");
     }
-    console.log(parsed);
+    console.log(checked);
   });
 
 program.parse();

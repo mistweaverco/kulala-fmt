@@ -10,6 +10,7 @@ const config = [
       format: "cjs",
       sourcemap: false,
     },
+    external: ["tree-sitter", "@mistweaverco/tree-sitter-kulala"],
     plugins: [
       json(),
       commonjs(),
