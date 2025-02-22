@@ -1,6 +1,6 @@
 {
   "name": "@mistweaverco/kulala-fmt",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
@@ -36,6 +36,8 @@
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.3",
     "js-yaml": "^4.1.0",
+    "lodash": "^4.17.21",
+    "ohm-js": "^17.1.0",
     "prettier": "^3.5.1",
     "rollup": "^4.34.8",
     "tslib": "^2.8.1",
