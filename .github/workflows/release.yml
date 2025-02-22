@@ -31,4 +31,4 @@ jobs:
       - name: Build
         run: bun run build
       - name: Publish
-        run: bun run publish --tag $VERSION
+        run: bun publish --tag $VERSION
