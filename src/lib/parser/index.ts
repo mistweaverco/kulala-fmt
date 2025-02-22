@@ -87,24 +87,34 @@ export const format = (
   }
 };
 
-const convertToOpenAPI = (file: string): void => {
-  const json = getOpenAPISpecAsJSON(file);
-  const { documents, serverUrls } = OpenAPIParser.parse(json);
-  serverUrls.forEach((serverUrl, index) => {
-    const build = DocumentBuilder.build(documents[index]);
-    const outputFilename = file.replace(/\.[^/.]+$/, `.${serverUrl}.http`);
-    fs.writeFileSync(outputFilename, build, "utf-8");
-    console.log(chalk.green(`Converted file: ${file} --> ${outputFilename}`));
-  });
+const convertToOpenAPI = (files: string[]): void => {
+  for (const file of files) {
+    const json = getOpenAPISpecAsJSON(file);
+    const { documents, serverUrls } = OpenAPIParser.parse(json);
+    serverUrls.forEach((serverUrl, index) => {
+      const build = DocumentBuilder.build(documents[index]);
+      const outputFilename = file.replace(/\.[^/.]+$/, `.${serverUrl}.http`);
+      fs.writeFileSync(outputFilename, build, "utf-8");
+      console.log(chalk.green(`Converted file: ${file} --> ${outputFilename}`));
+    });
+  }
 };
 
 export const convert = (
   options: { from: string; to: string },
   files: string[],
 ): void => {
-  for (const file of files) {
-    if (options.from === "openapi" && options.to === "http") {
-      convertToOpenAPI(file);
-    }
+  switch (options.from) {
+    case "openapi":
+      switch (options.to) {
+        case "http":
+          convertToOpenAPI(files);
+          break;
+        default:
+          throw new Error("Invalid destination format.");
+      }
+      break;
+    default:
+      throw new Error("Invalid source format.");
   }
 };

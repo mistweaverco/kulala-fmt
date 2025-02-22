@@ -31,7 +31,7 @@ program
   .command("convert")
   .description("Convert files to .http format")
   .argument("<files...>", "files to include")
-  .option("--from", "source format", "OpenAPI")
+  .option("--from", "source format", "openapi")
   .option("--to", "destination format", "http")
   .action((files, options) => {
     convert(options, files);
