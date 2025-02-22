@@ -31,4 +31,6 @@ jobs:
       - name: Build
         run: bun run build
       - name: Publish
-        run: bun run publish --tag $VERSION
+        run: bun publish
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_CONFIG_TOKEN }}
