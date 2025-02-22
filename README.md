@@ -97,10 +97,10 @@ kulala-fmt convert --from postman postman.json
 
 #### Bruno to `.http`
 
-Convert  `.bruno` files to `.http` files:
+Convert Bruno collections to `.http` files:
 
 ```sh
-kulala-fmt convert --from bruno test.bru
+kulala-fmt convert --from bruno path/to/bruno/collection
 ```
 
 ## What does it do?
