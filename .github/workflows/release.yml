@@ -34,3 +34,8 @@ jobs:
         run: bun publish
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_CONFIG_TOKEN }}
+      - name: Make release
+        run: |
+          gh release create v$VERSION -t "v$VERSION" --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
