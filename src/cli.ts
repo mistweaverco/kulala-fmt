@@ -1,6 +1,6 @@
 import pkg from "./../package.json";
 import { Command } from "commander";
-import { check, format } from "./lib/parser";
+import { check, format, convert } from "./lib/parser";
 const program = new Command();
 
 program
@@ -25,6 +25,16 @@ program
   .option("-v, --verbose", "enable verbose mode", false)
   .action((files, options) => {
     check(options.verbose, files);
+  });
+
+program
+  .command("convert")
+  .description("Convert files to .http format")
+  .argument("<files...>", "files to include")
+  .option("--from", "source format", "OpenAPI")
+  .option("--to", "destination format", "http")
+  .action((files, options) => {
+    convert(options, files);
   });
 
 program.parse();

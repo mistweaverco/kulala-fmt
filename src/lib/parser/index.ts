@@ -1,9 +1,20 @@
 import * as fs from "fs";
 import chalk from "chalk";
+import yaml from "js-yaml";
 import { fileWalker } from "./../filewalker";
 import { DocumentParser } from "./DocumentParser";
 import { DocumentBuilder } from "./DocumentBuilder";
 import { Diff } from "./Diff";
+import { OpenAPIDocumentParser, OpenAPISpec } from "./OpenAPIDocumentParser";
+
+const OpenAPIParser = new OpenAPIDocumentParser();
+
+const getOpenAPISpecAsJSON = (filepath: string): OpenAPISpec => {
+  if (filepath.endsWith(".yaml") || filepath.endsWith(".yml")) {
+    return yaml.load(fs.readFileSync(filepath, "utf-8")) as OpenAPISpec;
+  }
+  return JSON.parse(fs.readFileSync(filepath, "utf-8")) as OpenAPISpec;
+};
 
 const isFileValid = (filepath: string): [boolean, string, string] => {
   const content = fs.readFileSync(filepath, "utf-8");
@@ -73,5 +84,21 @@ export const format = (
     } else {
       console.log(chalk.green(`Valid file: ${file}`));
     }
+  }
+};
+
+export const convert = (
+  options: { from: string; to: string },
+  files: string[],
+): void => {
+  for (const file of files) {
+    const json = getOpenAPISpecAsJSON(file);
+    const { documents, serverUrls } = OpenAPIParser.parse(json);
+    serverUrls.forEach((serverUrl, index) => {
+      const build = DocumentBuilder.build(documents[index]);
+      const outputFilename = file.replace(/\.[^/.]+$/, `.${serverUrl}.http`);
+      fs.writeFileSync(outputFilename, build, "utf-8");
+      console.log(chalk.green(`Converted file: ${file} --> ${outputFilename}`));
+    });
   }
 };

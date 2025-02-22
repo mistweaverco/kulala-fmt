@@ -1,7 +1,7 @@
 import Parser, { SyntaxNode, type Language } from "tree-sitter";
 import Kulala from "@mistweaverco/tree-sitter-kulala";
 
-interface Header {
+export interface Header {
   key: string;
   value: string;
 }
@@ -34,7 +34,7 @@ interface Variable {
   value: string;
 }
 
-interface Block {
+export interface Block {
   metadata: Metadata[];
   comments: string[];
   request: Request | null;

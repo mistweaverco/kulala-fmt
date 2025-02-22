@@ -30,6 +30,12 @@ npm install -g @mistweaverco/kulala-fmt
 
 ## Usage
 
+kulala-fmt can `format` and `check` `.http` and `.rest` files.
+
+It can also `convert` OpenAPI `.yaml`, `.yml` or `.json` files to `.http` files.
+
+### Format
+
 Format all `.http` and `.rest` files in the current directory and its subdirectories:
 
 ```sh
@@ -41,6 +47,8 @@ Format specific `.http` and `.rest` files.
 ```sh
 kulala-fmt format file1.http file2.rest http/*.http
 ```
+
+### Check
 
 Check if all `.http` and `.rest` files in the current directory and its subdirectories are formatted:
 
@@ -67,6 +75,14 @@ prints the desired output to the console:
 
 ```sh
 kulala-fmt check --verbose file1.http file2.rest http/*.http
+```
+
+### Convert
+
+Convert OpenAPI `.yaml`, `.yml` or `.json` files to `.http` files:
+
+```sh
+kulala-fmt convert openapi.yaml
 ```
 
 ## What does it do?
