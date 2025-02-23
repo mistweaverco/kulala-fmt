@@ -14,8 +14,9 @@ program
   .command("format")
   .description("Format files")
   .argument("[files]", "files to include", null)
-  .action((files) => {
-    format(files);
+  .option("--body", "also format the body", true)
+  .action(async (files, options) => {
+    await format(files, options);
   });
 
 program
@@ -23,8 +24,9 @@ program
   .description("Check if files are well formatted")
   .argument("[files]", "files to include", null)
   .option("-v, --verbose", "enable verbose mode", false)
-  .action((files, options) => {
-    check(options.verbose, files);
+  .option("--body", "also format the body", true)
+  .action(async (files, options) => {
+    await check(files, options);
   });
 
 program
@@ -33,8 +35,8 @@ program
   .argument("<files...>", "files to include")
   .option("--from <value>", "source format", "openapi")
   .option("--to <value>", "destination format", "http")
-  .action((files, options) => {
-    convert(options, files);
+  .action(async (files, options) => {
+    await convert(options, files);
   });
 
 program.parse();
