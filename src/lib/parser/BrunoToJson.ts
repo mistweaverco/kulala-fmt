@@ -1,5 +1,5 @@
-// @ts-nocheck
 /* eslint-disable */
+// @ts-nocheck
 import * as ohm from "ohm-js";
 import * as _ from "lodash";
 const outdentString = (str: string) => {

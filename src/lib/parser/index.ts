@@ -20,17 +20,23 @@ const getOpenAPISpecAsJSON = (filepath: string): OpenAPISpec => {
   return JSON.parse(fs.readFileSync(filepath, "utf-8")) as OpenAPISpec;
 };
 
-const isFileValid = (filepath: string): [boolean, string, string] => {
+const isFileValid = async (
+  filepath: string,
+  options: { body: boolean },
+): Promise<[boolean, string, string]> => {
   const content = fs.readFileSync(filepath, "utf-8");
   const document = DocumentParser.parse(content);
-  const build = DocumentBuilder.build(document);
+  const build = await DocumentBuilder.build(document, options.body);
   return [content === build, content, build];
 };
 
-const fixFile = (filepath: string): boolean => {
+const fixFile = async (
+  filepath: string,
+  formatBody: boolean,
+): Promise<boolean> => {
   const content = fs.readFileSync(filepath, "utf-8");
   const document = DocumentParser.parse(content);
-  const build = DocumentBuilder.build(document);
+  const build = await DocumentBuilder.build(document, formatBody);
   const isValid = content === build;
   if (!isValid) {
     fs.writeFileSync(filepath, build, "utf-8");
@@ -42,14 +48,15 @@ const fixFile = (filepath: string): boolean => {
  * Checks the validity of HTTP files in the given directory.
  *
  * @param {string} dirPath The directory path to check.
+ * @param {{ verbose: boolean; body: boolean }} options The options to use.
  * @param {string[]} extensions An array of file extensions to filter by (e.g., ['.http', '.rest']).
  * @returns {CheckedFiles[]} An array of CheckedFiles objects.
  */
-export const check = (
-  verbose: boolean = false,
+export const check = async (
   dirPath: string | null,
+  options: { verbose: boolean; body: boolean },
   extensions: string[] | undefined = undefined,
-): void => {
+): Promise<void> => {
   if (!dirPath) {
     dirPath = process.cwd();
   }
@@ -58,10 +65,10 @@ export const check = (
   }
   const files = fileWalker(dirPath, extensions);
   for (const file of files) {
-    const [isValid, content, build] = isFileValid(file);
+    const [isValid, content, build] = await isFileValid(file, options);
     if (!isValid) {
       console.log(chalk.red(`Invalid file: ${file}`));
-      if (verbose) {
+      if (options.verbose) {
         Diff(build, content);
       }
     } else {
@@ -70,10 +77,11 @@ export const check = (
   }
 };
 
-export const format = (
+export const format = async (
   dirPath: string | null,
+  options: { body: boolean },
   extensions: string[] | undefined = undefined,
-): void => {
+): Promise<void> => {
   if (!dirPath) {
     dirPath = process.cwd();
   }
@@ -82,7 +90,7 @@ export const format = (
   }
   const files = fileWalker(dirPath, extensions);
   for (const file of files) {
-    const neededFix = fixFile(file);
+    const neededFix = await fixFile(file, options.body);
     if (neededFix) {
       console.log(chalk.yellow(`Formatted file: ${file}`));
     } else {
@@ -91,12 +99,12 @@ export const format = (
   }
 };
 
-const convertFromOpenAPI = (files: string[]): void => {
+const convertFromOpenAPI = async (files: string[]): Promise<void> => {
   for (const file of files) {
     const json = getOpenAPISpecAsJSON(file);
     const { documents, serverUrls } = OpenAPIParser.parse(json);
-    serverUrls.forEach((serverUrl, index) => {
-      const build = DocumentBuilder.build(documents[index]);
+    serverUrls.forEach(async (serverUrl, index) => {
+      const build = await DocumentBuilder.build(documents[index]);
       const outputFilename = file.replace(/\.[^/.]+$/, `.${serverUrl}.http`);
       fs.writeFileSync(outputFilename, build, "utf-8");
       console.log(
@@ -108,11 +116,11 @@ const convertFromOpenAPI = (files: string[]): void => {
   }
 };
 
-const convertFromPostman = (files: string[]): void => {
+const convertFromPostman = async (files: string[]): Promise<void> => {
   for (const file of files) {
     const json = JSON.parse(fs.readFileSync(file, "utf-8"));
     const { document } = PostmanParser.parse(json);
-    const build = DocumentBuilder.build(document);
+    const build = await DocumentBuilder.build(document);
     const outputFilename = file.replace(/\.[^/.]+$/, ".http");
     fs.writeFileSync(outputFilename, build, "utf-8");
     console.log(
@@ -123,12 +131,12 @@ const convertFromPostman = (files: string[]): void => {
   }
 };
 
-const convertFromBruno = (files: string[]): void => {
+const convertFromBruno = async (files: string[]): Promise<void> => {
   const { documents, environmentNames, collectionName } = BrunoParser.parse(
     files[0],
   );
-  environmentNames.forEach((envName, idx) => {
-    const build = DocumentBuilder.build(documents[idx]);
+  environmentNames.forEach(async (envName, idx) => {
+    const build = await DocumentBuilder.build(documents[idx]);
     const outputFilename = `${collectionName}.${envName}.http`;
     fs.writeFileSync(outputFilename, build, "utf-8");
     console.log(
@@ -144,15 +152,15 @@ const invalidFormat = (t: "src" | "dest", format: string): void => {
   process.exit(1);
 };
 
-export const convert = (
+export const convert = async (
   options: { from: string; to: string },
   files: string[],
-): void => {
+): Promise<void> => {
   switch (options.from) {
     case "openapi":
       switch (options.to) {
         case "http":
-          convertFromOpenAPI(files);
+          await convertFromOpenAPI(files);
           break;
         default:
           invalidFormat("dest", options.to);
@@ -161,7 +169,7 @@ export const convert = (
     case "postman":
       switch (options.to) {
         case "http":
-          convertFromPostman(files);
+          await convertFromPostman(files);
           break;
         default:
           invalidFormat("dest", options.to);
@@ -170,7 +178,7 @@ export const convert = (
     case "bruno":
       switch (options.to) {
         case "http":
-          convertFromBruno(files);
+          await convertFromBruno(files);
           break;
         default:
           invalidFormat("dest", options.to);
