@@ -1,6 +1,6 @@
 {
   "name": "@mistweaverco/kulala-fmt",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "@mistweaverco/tree-sitter-kulala": "1.6.0",
-    "tree-sitter": "0.22.4"
+    "tree-sitter": "0.22.4",
+    "prettier": "^3.5.2"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.2",
@@ -38,7 +39,6 @@
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
     "ohm-js": "^17.1.0",
-    "prettier": "^3.5.2",
     "rollup": "^4.34.8",
     "tslib": "^2.8.1",
     "typescript-eslint": "^8.24.1"
