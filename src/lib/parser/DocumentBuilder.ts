@@ -151,7 +151,7 @@ const build = async (
 
     output += "\n###\n\n";
   }
-  output = output.trim();
+  output = output.trim() + "\n";
   return output;
 };
 
