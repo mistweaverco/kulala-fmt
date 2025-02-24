@@ -106,6 +106,9 @@ export class BrunoDocumentParser {
     };
 
     const block: Block = {
+      requestSeparator: {
+        text: null,
+      },
       metadata: [],
       comments: [],
       request,

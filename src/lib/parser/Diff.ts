@@ -6,6 +6,7 @@ export const Diff = (build: string, content: string) => {
 
   d.forEach((part) => {
     // green for additions, red for deletions
+    // with a black color
     const text = part.added
       ? part.value.bgGreen
       : part.removed

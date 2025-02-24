@@ -116,6 +116,9 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     operation: OpenAPIOperation,
   ): Block {
     const block: Block = {
+      requestSeparator: {
+        text: null,
+      },
       metadata: [],
       comments: [],
       request: {

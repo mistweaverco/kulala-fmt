@@ -70,6 +70,9 @@ interface ParseResult {
 export class PostmanDocumentParser {
   private buildRequestBlock(item: PostmanItem): Block {
     const block: Block = {
+      requestSeparator: {
+        text: null,
+      },
       metadata: [],
       comments: [],
       request: {
@@ -162,6 +165,9 @@ export class PostmanDocumentParser {
         const newPath = parentPath ? `${parentPath}/${item.name}` : item.name;
         if (item.description) {
           document.blocks.push({
+            requestSeparator: {
+              text: null,
+            },
             metadata: [],
             comments: [`# Folder: ${newPath}\n`, `# ${item.description}\n`],
             request: null,

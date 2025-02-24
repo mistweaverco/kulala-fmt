@@ -34,7 +34,12 @@ export interface Variable {
   value: string;
 }
 
+export interface BlockRequestSeparator {
+  text: string | null;
+}
+
 export interface Block {
+  requestSeparator: BlockRequestSeparator;
   metadata: Metadata[];
   comments: string[];
   request: Request | null;
@@ -56,6 +61,24 @@ const traverseNodes = (
   node.children.forEach((child) => traverseNodes(child, callback));
 };
 
+// formatUrl takes a URL string and retuns an formatted string
+// with the URL parts separated by new lines
+// For example, given the URL `https://httpbin.org/get?foo=bar&baz=qux`
+// the function should return:
+// ```
+// https://httpbin.org/get
+//   ?foo=bar
+//   &baz=qux
+// ```
+const formatUrl = (url: string): string => {
+  const parts = url.split("?");
+  if (parts.length === 1) {
+    return parts[0];
+  }
+  const [base, query] = parts;
+  return `${base}?${query.split("&").join("\n  &")}`.replace(/\n\s*\n/g, "\n");
+};
+
 const parse = (content: string): Document => {
   const parser = new Parser();
   const language = Kulala as Language;
@@ -73,6 +96,9 @@ const parse = (content: string): Document => {
 
   blockNodes.forEach((bn) => {
     const block: Block = {
+      requestSeparator: {
+        text: null,
+      },
       metadata: [],
       comments: [],
       request: null,
@@ -81,13 +107,13 @@ const parse = (content: string): Document => {
       responseRedirect: null,
     };
 
-    bn.children.forEach((node) => {
-      const headers: Header[] = [];
-      let method: string = "";
-      let url: string = "";
-      let httpVersion: string = "";
-      let body: string | null = null;
+    const headers: Header[] = [];
+    let method: string = "";
+    let url: string = "";
+    let httpVersion: string = "";
+    let body: string | null = null;
 
+    bn.children.forEach((node) => {
       if (node.type === "pre_request_script") {
         let preRequestScript: PreRequestScript | null = null;
         node.children.forEach((child) => {
@@ -109,6 +135,19 @@ const parse = (content: string): Document => {
         if (preRequestScript) {
           block.preRequestScripts.push(preRequestScript);
         }
+      }
+      if (node.type === "request_separator") {
+        // without text
+        if (node.children.length === 0) {
+          block.requestSeparator.text = null;
+        }
+        node.children.forEach((child) => {
+          switch (child.type) {
+            case "value":
+              block.requestSeparator.text = child.text;
+              break;
+          }
+        });
       }
       if (node.type === "comment") {
         // normal comment
@@ -146,7 +185,7 @@ const parse = (content: string): Document => {
               method = child.text;
               break;
             case "target_url":
-              url = child.text;
+              url = formatUrl(child.text);
               break;
             case "http_version":
               httpVersion = child.text;
@@ -197,18 +236,17 @@ const parse = (content: string): Document => {
         if (httpVersion === "") {
           httpVersion = "HTTP/1.1";
         }
-
-        block.request = {
-          method,
-          url,
-          httpVersion,
-          headers,
-          body,
-        };
       }
+      block.request = {
+        method,
+        url,
+        httpVersion,
+        headers,
+        body,
+      };
     });
     if (
-      block.request ||
+      block.request?.url.length ||
       block.metadata.length > 0 ||
       block.comments.length > 0
     ) {

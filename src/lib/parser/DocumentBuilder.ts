@@ -64,7 +64,13 @@ const build = async (
     output += `@${variable.key} = ${variable.value}\n`;
   }
   output += "\n\n";
+
   for (const block of document.blocks) {
+    const requestSeparatorText = block.requestSeparator.text
+      ? ` ${block.requestSeparator.text}`
+      : "";
+    output += `\n###${requestSeparatorText}\n\n`;
+
     if (block.comments.length > 0) {
       for (const comment of block.comments) {
         output += `${replaceCommentPrefix(comment)}`;
@@ -152,8 +158,6 @@ const build = async (
     if (block.responseRedirect) {
       output += `\n${block.responseRedirect}\n`;
     }
-
-    output += "\n###\n\n";
   }
   output = output.trim() + "\n";
   return output;
