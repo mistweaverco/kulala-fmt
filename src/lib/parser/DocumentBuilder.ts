@@ -8,6 +8,15 @@ function headerToPascalCase(str: string) {
     .join("-");
 }
 
+const formatFormBody = (body: string): string => {
+  body = body.replace(/\n/g, "").replace(/\s+/g, "");
+  const parts = body.split("&");
+  if (parts.length === 1) {
+    return parts[0];
+  }
+  return parts.join("&\n").replace(/\n\s*\n/g, "\n");
+};
+
 // Get header value based on case insensitive key
 function getHeader(headers: Header[], key: string) {
   const header = headers.find(
@@ -80,7 +89,7 @@ const build = async (
   for (const variable of document.variables) {
     output += `@${variable.key} = ${variable.value}\n`;
   }
-  output += "\n\n";
+  output += "\n";
 
   for (const block of document.blocks) {
     const requestSeparatorText = block.requestSeparator.text
@@ -137,6 +146,11 @@ const build = async (
               console.log(error.message);
               process.exit(1);
             }
+          } else if (
+            getHeader(block.request.headers, "content-type") ===
+            "application/x-www-form-urlencoded"
+          ) {
+            body = formatFormBody(body);
           }
         }
         output += `\n${body}\n`;
