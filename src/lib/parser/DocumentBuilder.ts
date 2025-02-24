@@ -27,31 +27,48 @@ const getFormatParser = (block: Block): null | "graphql" | "json" => {
   return null;
 };
 
-// New helper function to split GraphQL body and variables
-function splitGraphQLBody(body: string): {
-  query: string;
-  variables: string | null;
-} {
-  // Split on first occurrence of two newlines followed by a JSON-like structure
-  const parts = body.split(/\n\s*\n(\s*{)/);
-
-  if (parts.length >= 2) {
-    // Rejoin the JSON part if it was split
-    const variables = parts.slice(1).join("");
-    return {
-      query: parts[0].trim(),
-      variables: variables.trim(),
-    };
-  }
-
-  return {
-    query: body.trim(),
-    variables: null,
-  };
-}
-
 function replaceCommentPrefix(comment: string): string {
   return comment.replace(/^(\/\/)/, "#");
+}
+
+function preservePlaceholders(body: string) {
+  const placeholderRegex = /(?<!")({{\$?\w+}})(?!")/g;
+  const placeholders = new Map<string, string>();
+  let replacedBody = body;
+
+  replacedBody = replacedBody.replace(placeholderRegex, (match) => {
+    const key = `__KULALA_FMT_PLACEHOLDER_${placeholders.size}__`;
+    placeholders.set(key, match);
+    return `"${key}"`;
+  });
+  replacedBody = replacedBody.replace(/""/g, "");
+
+  return { replacedBody, placeholders };
+}
+
+function restorePlaceholders(
+  formattedBody: string,
+  placeholders: Map<string, string>,
+) {
+  let restoredBody = formattedBody;
+  const placeholdersLength = placeholders.size;
+  let idx = 0;
+  placeholders.forEach((original, key) => {
+    let firstQuote = "";
+    let lastQuote = "";
+    if (idx === 0) {
+      firstQuote = '"';
+    }
+    if (idx === placeholdersLength - 1) {
+      lastQuote = '"';
+    }
+    restoredBody = restoredBody.replace(
+      `${firstQuote}${key}${lastQuote}`,
+      original,
+    );
+    idx++;
+  });
+  return restoredBody;
 }
 
 const build = async (
@@ -93,14 +110,10 @@ const build = async (
         let headerKey = header.key;
         switch (block.request.httpVersion) {
           case "HTTP/1.0":
-            headerKey = headerToPascalCase(header.key);
-            break;
           case "HTTP/1.1":
             headerKey = headerToPascalCase(header.key);
             break;
           case "HTTP/2":
-            headerKey = header.key.toLowerCase();
-            break;
           case "HTTP/3":
             headerKey = header.key.toLowerCase();
             break;
@@ -110,36 +123,15 @@ const build = async (
       if (block.request.body) {
         let body = block.request.body.trim();
         if (formatBody) {
-          if (formatParser === "graphql") {
-            const { query, variables } = splitGraphQLBody(body);
+          if (formatParser === "graphql" || formatParser === "json") {
             try {
-              // Format the GraphQL query
-              const formattedQuery = await prettier.format(query, {
-                parser: "graphql",
+              const { replacedBody, placeholders } = preservePlaceholders(body);
+
+              body = await prettier.format(replacedBody, {
+                parser: formatParser,
               });
 
-              // Format the variables if they exist
-              let formattedVariables = "";
-              if (variables) {
-                formattedVariables = await prettier.format(variables, {
-                  parser: "json",
-                });
-              }
-
-              // Combine the formatted parts
-              body = formattedQuery.trim();
-              if (formattedVariables) {
-                body += "\n\n" + formattedVariables.trim();
-              }
-            } catch (err) {
-              const error = err as Error;
-              console.log(error.message);
-              process.exit(1);
-            }
-          } else if (formatParser === "json") {
-            try {
-              body = await prettier.format(body, { parser: "json" });
-              body = body.trim();
+              body = restorePlaceholders(body, placeholders).trim();
             } catch (err) {
               const error = err as Error;
               console.log(error.message);
