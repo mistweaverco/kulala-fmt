@@ -50,6 +50,10 @@ function splitGraphQLBody(body: string): {
   };
 }
 
+function replaceCommentPrefix(comment: string): string {
+  return comment.replace(/^(\/\/)/, "#");
+}
+
 const build = async (
   document: Document,
   formatBody: boolean = true,
@@ -63,7 +67,7 @@ const build = async (
   for (const block of document.blocks) {
     if (block.comments.length > 0) {
       for (const comment of block.comments) {
-        output += `${comment}`;
+        output += `${replaceCommentPrefix(comment)}`;
       }
     }
     if (block.preRequestScripts.length > 0) {
