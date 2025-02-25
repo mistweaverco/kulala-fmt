@@ -61,6 +61,26 @@ const traverseNodes = (
   node.children.forEach((child) => traverseNodes(child, callback));
 };
 
+const documentHasErrors = (node: SyntaxNode): boolean => {
+  const recursiveNodeWalk = (
+    node: SyntaxNode,
+    callback: (node: SyntaxNode) => boolean,
+  ): boolean => {
+    if (callback(node)) {
+      return true; // Return true if the callback returns true
+    }
+    for (const child of node.children) {
+      if (recursiveNodeWalk(child, callback)) {
+        return true; // Return true if a child node has an error
+      }
+    }
+    return false; // Return false if no error is found in this subtree
+  };
+  return recursiveNodeWalk(node, (n) => {
+    return n.hasError; // Return true if the node has an error
+  });
+};
+
 // formatUrl takes a URL string and retuns an formatted string
 // with the URL parts separated by new lines
 // For example, given the URL `https://httpbin.org/get?foo=bar&baz=qux`
@@ -79,13 +99,19 @@ const formatUrl = (url: string): string => {
   return `${base}?${query.split("&").join("\n  &")}`.replace(/\n\s*\n/g, "\n");
 };
 
-const parse = (content: string): Document => {
+// Returns a Document object if the content is valid .http syntax,
+// otherwise null.
+const parse = (content: string): Document | null => {
   const parser = new Parser();
   const language = Kulala as Language;
   parser.setLanguage(language);
 
   const tree = parser.parse(content);
   const documentNode = tree.rootNode;
+
+  if (documentHasErrors(documentNode)) {
+    return null;
+  }
 
   const variables: Variable[] = [];
   const blocks: Block[] = [];

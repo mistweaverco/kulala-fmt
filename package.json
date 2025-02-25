@@ -1,6 +1,6 @@
 {
   "name": "@mistweaverco/kulala-fmt",
-  "version": "2.6.2",
+  "version": "2.7.0",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
@@ -16,7 +16,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@mistweaverco/tree-sitter-kulala": "1.8.0",
+    "@mistweaverco/tree-sitter-kulala": "1.8.1",
     "tree-sitter": "0.22.4",
     "prettier": "^3.5.2"
   },
