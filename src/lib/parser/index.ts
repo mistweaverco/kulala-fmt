@@ -20,28 +20,35 @@ const getOpenAPISpecAsJSON = (filepath: string): OpenAPISpec => {
   return JSON.parse(fs.readFileSync(filepath, "utf-8")) as OpenAPISpec;
 };
 
-const isFileValid = async (
+const isAlreadyPretty = async (
   filepath: string,
   options: { body: boolean },
-): Promise<[boolean, string, string]> => {
+): Promise<[boolean | null, string, string]> => {
   const content = fs.readFileSync(filepath, "utf-8");
   const document = DocumentParser.parse(content);
+  if (!document) {
+    return [null, content, ""];
+  }
   const build = await DocumentBuilder.build(document, options.body);
   return [content === build, content, build];
 };
 
-const fixFile = async (
+const makeFilePretty = async (
   filepath: string,
   formatBody: boolean,
-): Promise<boolean> => {
+): Promise<boolean | null> => {
   const content = fs.readFileSync(filepath, "utf-8");
   const document = DocumentParser.parse(content);
+  // if document is null, that means we had an error parsing the file
+  if (!document) {
+    return null;
+  }
   const build = await DocumentBuilder.build(document, formatBody);
-  const isValid = content === build;
-  if (!isValid) {
+  const isAlreadyPretty = content === build;
+  if (!isAlreadyPretty) {
     fs.writeFileSync(filepath, build, "utf-8");
   }
-  return !isValid;
+  return isAlreadyPretty;
 };
 
 /**
@@ -63,17 +70,24 @@ export const check = async (
   if (!extensions) {
     extensions = [".http", ".rest"];
   }
+  let errorHappened = false;
   const files = fileWalker(dirPath, extensions);
   for (const file of files) {
-    const [isValid, content, build] = await isFileValid(file, options);
-    if (!isValid) {
-      console.log(chalk.red(`Invalid file: ${file}`));
+    const [isPretty, content, build] = await isAlreadyPretty(file, options);
+    if (isPretty === false) {
+      console.log(chalk.yellow(`File not pretty: ${file}`));
       if (options.verbose) {
         Diff(build, content);
       }
+    } else if (isPretty === null) {
+      console.log(chalk.red(`Error parsing file: ${file}`));
+      errorHappened = true;
     } else {
       console.log(chalk.green(`Valid file: ${file}`));
     }
+  }
+  if (errorHappened) {
+    process.exit(1);
   }
 };
 
@@ -88,14 +102,21 @@ export const format = async (
   if (!extensions) {
     extensions = [".http", ".rest"];
   }
+  let errorHappened = false;
   const files = fileWalker(dirPath, extensions);
   for (const file of files) {
-    const neededFix = await fixFile(file, options.body);
+    const neededFix = await makeFilePretty(file, options.body);
     if (neededFix) {
       console.log(chalk.yellow(`Formatted file: ${file}`));
+    } else if (neededFix === null) {
+      console.log(chalk.red(`Error parsing file: ${file}`));
+      errorHappened = true;
     } else {
       console.log(chalk.green(`Valid file: ${file}`));
     }
+  }
+  if (errorHappened) {
+    process.exit(1);
   }
 };
 
