@@ -25,6 +25,29 @@ function getHeader(headers: Header[], key: string) {
   return header?.value.toLowerCase();
 }
 
+// Helper function to split GraphQL body and variables
+function splitGraphQLBody(body: string): {
+  query: string;
+  variables: string | null;
+} {
+  // Split on first occurrence of two newlines followed by a JSON-like structure
+  const parts = body.split(/\n\s*\n(\s*{)/);
+
+  if (parts.length >= 2) {
+    // Rejoin the JSON part if it was split
+    const variables = parts.slice(1).join("");
+    return {
+      query: parts[0].trim(),
+      variables: variables.trim(),
+    };
+  }
+
+  return {
+    query: body.trim(),
+    variables: null,
+  };
+}
+
 const getFormatParser = (block: Block): null | "graphql" | "json" => {
   const headers = block.request?.headers || [];
   if (getHeader(headers, "x-request-type") === "graphql") {
@@ -132,7 +155,33 @@ const build = async (
       if (block.request.body) {
         let body = block.request.body.trim();
         if (formatBody) {
-          if (formatParser === "graphql" || formatParser === "json") {
+          if (formatParser === "graphql") {
+            try {
+              const { replacedBody, placeholders } = preservePlaceholders(body);
+              const { query, variables } = splitGraphQLBody(replacedBody);
+
+              const formattedQuery = await prettier.format(query, {
+                parser: formatParser,
+              });
+
+              // Format the variables if they exist
+              let formattedVariables = "";
+              if (variables) {
+                formattedVariables = await prettier.format(variables, {
+                  parser: "json",
+                });
+              }
+              body = formattedQuery.trim();
+              if (formattedVariables) {
+                body += `\n\n${formattedVariables.trim()}`;
+              }
+              body = restorePlaceholders(body, placeholders).trim();
+            } catch (err) {
+              const error = err as Error;
+              console.log(error.message);
+              process.exit(1);
+            }
+          } else if (formatParser === "json") {
             try {
               const { replacedBody, placeholders } = preservePlaceholders(body);
 
