@@ -44,11 +44,11 @@ const makeFilePretty = async (
     return null;
   }
   const build = await DocumentBuilder.build(document, formatBody);
-  const isAlreadyPretty = content === build;
-  if (!isAlreadyPretty) {
+  const isPretty = content === build;
+  if (!isPretty) {
     fs.writeFileSync(filepath, build, "utf-8");
   }
-  return isAlreadyPretty;
+  return isPretty;
 };
 
 /**
@@ -105,10 +105,10 @@ export const format = async (
   let errorHappened = false;
   const files = fileWalker(dirPath, extensions);
   for (const file of files) {
-    const neededFix = await makeFilePretty(file, options.body);
-    if (neededFix) {
+    const isPretty = await makeFilePretty(file, options.body);
+    if (isPretty === false) {
       console.log(chalk.yellow(`Formatted file: ${file}`));
-    } else if (neededFix === null) {
+    } else if (isPretty === null) {
       console.log(chalk.red(`Error parsing file: ${file}`));
       errorHappened = true;
     } else {

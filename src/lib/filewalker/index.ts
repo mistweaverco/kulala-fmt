@@ -23,10 +23,8 @@ export function fileWalker(inputPath: string, extensions: string[]): string[] {
   }
 
   // Define a root directory for computing relative paths.
-  let rootDir: string;
+  const rootDir: string = process.cwd();
   if (stats.isFile()) {
-    // For a file, use its directory as the root.
-    rootDir = path.dirname(absolutePath);
     const ext = path.extname(absolutePath).toLowerCase();
     if (extensions.includes(ext)) {
       // Return the file path relative to its parent directory.
@@ -34,7 +32,7 @@ export function fileWalker(inputPath: string, extensions: string[]): string[] {
     }
     return filePaths;
   } else if (stats.isDirectory()) {
-    rootDir = absolutePath;
+    // nothing to do here
   } else {
     // If it's neither a file nor a directory (e.g., a special file), return empty.
     return filePaths;
