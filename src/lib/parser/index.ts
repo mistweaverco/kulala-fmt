@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as process from "process";
 import chalk from "chalk";
 import yaml from "js-yaml";
 import { fileWalker } from "./../filewalker";
@@ -8,7 +9,6 @@ import { Diff } from "./Diff";
 import { OpenAPIDocumentParser, OpenAPISpec } from "./OpenAPIDocumentParser";
 import { PostmanDocumentParser } from "./PostmanDocumentParser";
 import { BrunoDocumentParser } from "./BrunoDocumentParser";
-import * as process from "process";
 
 const OpenAPIParser = new OpenAPIDocumentParser();
 const PostmanParser = new PostmanDocumentParser();
@@ -92,28 +92,29 @@ export const check = async (
   }
 };
 
-const getStdinContent = () => {
-  return new Promise<string>((resolve, reject) => {
-    let content = "";
+const getStdinContent = async () => {
+  let content = "";
 
-    process.stdin.on("data", (d) => {
-      content += d.toString();
-    });
+  for await (const chunk of process.stdin) {
+    content += chunk.toString();
+  }
 
-    process.stdin.on("end", () => {
-      resolve(content);
-    });
-
-    process.stdin.on("error", (error) => {
-      reject(error);
-    });
-  });
+  return content;
 };
 
-export const formatStdin = async () => {
+export const formatStdin = async (formatBody: boolean) => {
   const content = await getStdinContent();
 
-  console.log(content);
+  const document = DocumentParser.parse(content);
+  // if document is null, that means we had an error parsing the file
+  if (!document) {
+    process.stderr.write("Error parsing document");
+    return process.exit(1);
+  }
+
+  const build = await DocumentBuilder.build(document, formatBody);
+
+  process.stdout.write(build);
 };
 
 export const format = async (
@@ -122,7 +123,7 @@ export const format = async (
   extensions: string[] | undefined = undefined,
 ): Promise<void> => {
   if (options?.stdin) {
-    await formatStdin();
+    await formatStdin(options.body);
     return;
   }
 
