@@ -53,13 +53,23 @@ const makeFilePretty = async (
 };
 
 const getStdinContent = async () => {
-  let content = "";
+  try {
+    let content = "";
 
-  for await (const chunk of process.stdin) {
-    content += chunk.toString();
+    for await (const chunk of process.stdin) {
+      content += chunk.toString();
+    }
+
+    return content;
+  } catch (error) {
+    console.error(
+      chalk.red(
+        `Error reading stdin: ${error instanceof Error ? error?.message || error : error}`,
+      ),
+    );
+
+    return process.exit(1);
   }
-
-  return content;
 };
 
 const checkStdin = async (options: { body: boolean; verbose: boolean }) => {
