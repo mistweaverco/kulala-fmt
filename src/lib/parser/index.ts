@@ -52,6 +52,43 @@ const makeFilePretty = async (
   return isPretty;
 };
 
+const getStdinContent = async () => {
+  let content = "";
+
+  for await (const chunk of process.stdin) {
+    content += chunk.toString();
+  }
+
+  return content;
+};
+
+const checkStdin = async (options: { body: boolean; verbose: boolean }) => {
+  const content = await getStdinContent();
+
+  const document = DocumentParser.parse(content);
+
+  if (!document) {
+    console.error(chalk.red("Error parsing input"));
+    return process.exit(1);
+  }
+
+  const formattedDocument = await DocumentBuilder.build(document, options.body);
+
+  const isPretty = formattedDocument === content;
+
+  if (isPretty) {
+    console.log(chalk.green("Input is pretty"));
+  } else {
+    console.error(chalk.yellow("Input is not pretty"));
+
+    if (options.verbose) {
+      Diff(formattedDocument, content);
+    }
+
+    return process.exit(1);
+  }
+};
+
 /**
  * Checks the validity of HTTP files in the given directory.
  *
@@ -62,9 +99,14 @@ const makeFilePretty = async (
  */
 export const check = async (
   dirPath: string | null,
-  options: { verbose: boolean; body: boolean },
+  options: { verbose: boolean; body: boolean; stdin: boolean },
   extensions: string[] | undefined = undefined,
 ): Promise<void> => {
+  if (options.stdin) {
+    await checkStdin(options);
+    return;
+  }
+
   if (!dirPath) {
     dirPath = process.cwd();
   }
@@ -92,29 +134,19 @@ export const check = async (
   }
 };
 
-const getStdinContent = async () => {
-  let content = "";
-
-  for await (const chunk of process.stdin) {
-    content += chunk.toString();
-  }
-
-  return content;
-};
-
 export const formatStdin = async (formatBody: boolean) => {
   const content = await getStdinContent();
 
   const document = DocumentParser.parse(content);
-  // if document is null, that means we had an error parsing the file
+
   if (!document) {
-    process.stderr.write("Error parsing document");
+    console.error(chalk.red("Error parsing input"));
     return process.exit(1);
   }
 
-  const build = await DocumentBuilder.build(document, formatBody);
+  const formattedDocument = await DocumentBuilder.build(document, formatBody);
 
-  process.stdout.write(build);
+  process.stdout.write(formattedDocument);
 };
 
 export const format = async (
