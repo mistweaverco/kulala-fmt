@@ -15,6 +15,7 @@ program
   .description("Format files")
   .argument("[files]", "files to include", null)
   .option("--body", "also format the body", true)
+  .option("--stdin", "read from stdin and print output to stdout", false)
   .action(async (files, options) => {
     await format(files, options);
   });

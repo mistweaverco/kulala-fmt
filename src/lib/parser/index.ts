@@ -8,6 +8,7 @@ import { Diff } from "./Diff";
 import { OpenAPIDocumentParser, OpenAPISpec } from "./OpenAPIDocumentParser";
 import { PostmanDocumentParser } from "./PostmanDocumentParser";
 import { BrunoDocumentParser } from "./BrunoDocumentParser";
+import * as process from "process";
 
 const OpenAPIParser = new OpenAPIDocumentParser();
 const PostmanParser = new PostmanDocumentParser();
@@ -91,11 +92,40 @@ export const check = async (
   }
 };
 
+const getStdinContent = () => {
+  return new Promise<string>((resolve, reject) => {
+    let content = "";
+
+    process.stdin.on("data", (d) => {
+      content += d.toString();
+    });
+
+    process.stdin.on("end", () => {
+      resolve(content);
+    });
+
+    process.stdin.on("error", (error) => {
+      reject(error);
+    });
+  });
+};
+
+export const formatStdin = async () => {
+  const content = await getStdinContent();
+
+  console.log(content);
+};
+
 export const format = async (
   dirPath: string | null,
-  options: { body: boolean },
+  options: { body: boolean; stdin: boolean },
   extensions: string[] | undefined = undefined,
 ): Promise<void> => {
+  if (options?.stdin) {
+    await formatStdin();
+    return;
+  }
+
   if (!dirPath) {
     dirPath = process.cwd();
   }
