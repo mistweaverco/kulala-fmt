@@ -48,6 +48,12 @@ Format specific `.http` and `.rest` files.
 kulala-fmt format file1.http file2.rest http/*.http
 ```
 
+Format stdin input:
+
+```sh
+cat SOMEFILE.http | kulala-fmt format --stdin
+```
+
 ### Check
 
 Check if all `.http` and `.rest` files in the current directory and its subdirectories are formatted:
@@ -75,6 +81,12 @@ prints the desired output to the console:
 
 ```sh
 kulala-fmt check --verbose file1.http file2.rest http/*.http
+```
+
+Check stdin input:
+
+```sh
+cat SOMEFILE.http | kulala-fmt format --stdin
 ```
 
 ### Convert
