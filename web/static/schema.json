@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "http_method": {
+          "type": "string",
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+            "HEAD",
+            "OPTIONS",
+            "TRACE",
+            "CONNECT",
+            "WEBSOCKET",
+            "GRAPHQL"
+          ]
+        },
+        "http_version": {
+          "type": "string",
+          "enum": [
+            "1.0",
+            "1.1",
+            "2.0",
+            "3.0"
+          ]
+        }
+      }
+    }
+  }
+}
