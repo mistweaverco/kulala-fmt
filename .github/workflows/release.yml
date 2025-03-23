@@ -23,9 +23,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: linux-bun-${{ hashFiles('**/bun.lockb') }}
+          key: linux-bun-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
-            linux-bun-${{ hashFiles('**/bun.lockb') }}
+            linux-bun-${{ hashFiles('**/bun.lock') }}
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Build
