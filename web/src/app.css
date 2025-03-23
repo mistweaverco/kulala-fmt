@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+@plugin 'daisyui' {
+	themes: dark --default;
+}
+
+div.code-toolbar {
+	position: relative;
+	display: grid;
+}
+div.code-toolbar > .toolbar {
+	position: absolute;
+	z-index: 10;
+	top: -16px;
+	right: -16px;
+	transition: opacity 0.3s ease-in-out;
+	opacity: 1;
+}
+div.code-toolbar > .toolbar > .toolbar-item {
+	display: inline-block;
+}
+div.code-toolbar > .toolbar > .toolbar-item > a {
+	cursor: pointer;
+}
+/* icon copy */
+div.code-toolbar > .toolbar > .toolbar-item > button {
+	font-size: 2rem;
+	color: #e6caa8;
+}
+/* color of "Copied!" */
+.copy-to-clipboard-button[data-copy-state~='copy-success'] > span {
+	color: #10b981;
+}
+
+/* default item color */
+div.code-toolbar > .toolbar > .toolbar-item {
+	color: #e6caa8;
+}
