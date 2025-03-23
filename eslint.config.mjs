@@ -11,6 +11,6 @@ export default [
   ...tseslint.configs.recommended,
   eslintPluginPrettierRecommended.default,
   {
-    ignores: ["dist/**/*", "node_modules/**/*"],
+    ignores: ["dist/**/*", "web/**/*", "node_modules/**/*"],
   },
 ];
