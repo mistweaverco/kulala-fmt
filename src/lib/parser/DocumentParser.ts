@@ -1,5 +1,8 @@
 import Parser, { SyntaxNode, type Language } from "tree-sitter";
 import Kulala from "@mistweaverco/tree-sitter-kulala";
+import { configparser } from "./../configparser";
+
+const config = configparser.parse();
 
 export interface Header {
   key: string;
@@ -256,11 +259,11 @@ const parse = (content: string): Document | null => {
         });
 
         if (method === "") {
-          method = "GET";
+          method = config.defaults.http_method;
         }
 
         if (httpVersion === "") {
-          httpVersion = "HTTP/1.1";
+          httpVersion = config.defaults.http_version;
         }
       }
       block.request = {

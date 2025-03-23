@@ -1,6 +1,7 @@
 import pkg from "./../package.json";
 import { Command } from "commander";
 import { check, format, convert } from "./lib/parser";
+import { configparser } from "./lib/configparser";
 const program = new Command();
 
 program
@@ -39,6 +40,13 @@ program
   .option("--to <value>", "destination format", "http")
   .action(async (files, options) => {
     await convert(options, files);
+  });
+
+program
+  .command("init")
+  .description("initialize a new kulala-fmt.yaml file")
+  .action(() => {
+    configparser.init();
   });
 
 program.parse();
