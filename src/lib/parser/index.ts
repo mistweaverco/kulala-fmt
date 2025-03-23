@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as process from "process";
 import chalk from "chalk";
 import yaml from "js-yaml";
 import { fileWalker } from "./../filewalker";
@@ -51,6 +52,53 @@ const makeFilePretty = async (
   return isPretty;
 };
 
+const getStdinContent = async () => {
+  try {
+    let content = "";
+
+    for await (const chunk of process.stdin) {
+      content += chunk.toString();
+    }
+
+    return content;
+  } catch (error) {
+    console.error(
+      chalk.red(
+        `Error reading stdin: ${error instanceof Error ? error?.message || error : error}`,
+      ),
+    );
+
+    return process.exit(1);
+  }
+};
+
+const checkStdin = async (options: { body: boolean; verbose: boolean }) => {
+  const content = await getStdinContent();
+
+  const document = DocumentParser.parse(content);
+
+  if (!document) {
+    console.error(chalk.red("Error parsing input"));
+    return process.exit(1);
+  }
+
+  const formattedDocument = await DocumentBuilder.build(document, options.body);
+
+  const isPretty = formattedDocument === content;
+
+  if (isPretty) {
+    console.log(chalk.green("Input is pretty"));
+  } else {
+    console.error(chalk.yellow("Input is not pretty"));
+
+    if (options.verbose) {
+      Diff(formattedDocument, content);
+    }
+
+    return process.exit(1);
+  }
+};
+
 /**
  * Checks the validity of HTTP files in the given directory.
  *
@@ -61,9 +109,14 @@ const makeFilePretty = async (
  */
 export const check = async (
   dirPath: string | null,
-  options: { verbose: boolean; body: boolean },
+  options: { verbose: boolean; body: boolean; stdin: boolean },
   extensions: string[] | undefined = undefined,
 ): Promise<void> => {
+  if (options.stdin) {
+    await checkStdin(options);
+    return;
+  }
+
   if (!dirPath) {
     dirPath = process.cwd();
   }
@@ -91,11 +144,31 @@ export const check = async (
   }
 };
 
+export const formatStdin = async (formatBody: boolean) => {
+  const content = await getStdinContent();
+
+  const document = DocumentParser.parse(content);
+
+  if (!document) {
+    console.error(chalk.red("Error parsing input"));
+    return process.exit(1);
+  }
+
+  const formattedDocument = await DocumentBuilder.build(document, formatBody);
+
+  process.stdout.write(formattedDocument);
+};
+
 export const format = async (
   dirPath: string | null,
-  options: { body: boolean },
+  options: { body: boolean; stdin: boolean },
   extensions: string[] | undefined = undefined,
 ): Promise<void> => {
+  if (options?.stdin) {
+    await formatStdin(options.body);
+    return;
+  }
+
   if (!dirPath) {
     dirPath = process.cwd();
   }
