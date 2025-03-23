@@ -208,7 +208,7 @@ const parse = (content: string): Document | null => {
           let parts, key, value;
           switch (child.type) {
             case "method":
-              method = child.text;
+              method = child.text.toUpperCase();
               break;
             case "target_url":
               url = formatUrl(child.text);
