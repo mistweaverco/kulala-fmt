@@ -73,7 +73,10 @@ function preservePlaceholders(body: string) {
     placeholders.set(key, match);
     return `"${key}"`;
   });
-  replacedBody = replacedBody.replace(/""/g, "");
+  replacedBody = replacedBody.replace(
+    /__""__KULALA_FMT_PLACEHOLDER_/g,
+    "____KULALA_FMT_PLACEHOLDER_",
+  );
 
   return { replacedBody, placeholders };
 }
