@@ -135,10 +135,20 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
 
     // Add operation summary/description as comments
     if (operation.summary) {
-      block.comments.push(`# ${operation.summary}\n`);
+      block.comments.push(
+        operation.summary
+          .split("\n")
+          .map((l) => `# ${l}`)
+          .join("\n") + "\n",
+      );
     }
     if (operation.description) {
-      block.comments.push(`# ${operation.description}\n`);
+      block.comments.push(
+        operation.description
+          .split("\n")
+          .map((l) => `# ${l}`)
+          .join("\n") + "\n",
+      );
     }
 
     // Add operationId as metadata
