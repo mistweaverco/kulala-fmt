@@ -279,6 +279,14 @@ const parse = (content: string): Document | null => {
       block.metadata.length > 0 ||
       block.comments.length > 0
     ) {
+      // sort headers by key
+      block.request?.headers.sort((a, b) => {
+        return a.key.localeCompare(b.key);
+      });
+      // sort metadata by key
+      block.metadata.sort((a, b) => {
+        return a.key.localeCompare(b.key);
+      });
       blocks.push(block);
     }
   });
@@ -306,6 +314,11 @@ const parse = (content: string): Document | null => {
         variables.push(variable);
       }
     }
+  });
+
+  // sort variables by key
+  variables.sort((a, b) => {
+    return a.key.localeCompare(b.key);
   });
 
   return { blocks, variables };
