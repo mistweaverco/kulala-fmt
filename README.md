@@ -130,30 +130,30 @@ So a perfect request would look like this:
 @variables1 = value1
 
 
+### REQUEST_NAME_ONE
+
 # This is a comment
 # This is another comment
 # @someother metatag
-# @name REQUEST_NAME_ONE
 GET http://localhost:8080/api/v1/health HTTP/1.1
 Content-Type: application/json
 
 {
   "key": "value"
 }
-
-###
 ```
 
 or this:
 
 ```http
-@variables1=value1
+@variables1 = value1
 
+
+### REQUEST_NAME_ONE
 
 # This is a comment
 # This is another comment
 # @someother metatag
-# @name REQUEST_NAME_ONE
 GET http://localhost:8080/api/v1/health HTTP/2
 content-type: application/json
 
