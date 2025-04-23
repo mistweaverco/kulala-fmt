@@ -214,7 +214,7 @@ const build = async (
       }
     }
     if (block.responseRedirect) {
-      output += `\n${block.responseRedirect}\n`;
+      output += `\n${block.responseRedirect.trim()}\n`;
     }
   }
   output = output.trim() + "\n";
