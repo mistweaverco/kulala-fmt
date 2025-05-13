@@ -28,6 +28,16 @@ Via npm:
 npm install -g @mistweaverco/kulala-fmt
 ```
 
+You can also run it directly without installation using npx:
+
+```sh
+# From npm registry
+npx @mistweaverco/kulala-fmt format file.http
+
+# Directly from GitHub
+npx github:mistweaverco/kulala-fmt format file.http
+```
+
 ## Usage
 
 kulala-fmt can `format` and `check` `.http` and `.rest` files.
