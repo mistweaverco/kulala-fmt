@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "rollup -c",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prepare": "rollup -c"
   },
   "bin": {
     "kulala-fmt": "dist/cli.cjs"
