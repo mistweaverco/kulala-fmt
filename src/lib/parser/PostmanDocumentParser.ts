@@ -77,7 +77,7 @@ export class PostmanDocumentParser {
       comments: [],
       request: {
         method: item.request.method,
-        url: item.request.url.raw,
+        url: item.request?.url?.raw,
         httpVersion: "HTTP/1.1",
         headers: [],
         body: null,
