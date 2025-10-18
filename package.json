@@ -1,11 +1,11 @@
 {
   "name": "@mistweaverco/kulala-fmt",
-  "version": "2.10.1",
+  "version": "2.10.2",
   "type": "module",
   "scripts": {
-    "build": "rollup -c",
-    "lint": "eslint .",
-    "prepare": "rollup -c"
+    "build": "./node_modules/.bin/rollup -c",
+    "lint": "./node_modules/.bin/eslint .",
+    "prepare": "./node_modules/.bin/rollup -c"
   },
   "bin": {
     "kulala-fmt": "dist/cli.cjs"
