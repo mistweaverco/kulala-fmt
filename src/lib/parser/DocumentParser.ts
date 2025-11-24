@@ -1,4 +1,4 @@
-import Parser, { SyntaxNode, type Language } from "tree-sitter";
+import Parser, { type Language, SyntaxNode } from "tree-sitter";
 import Kulala from "@mistweaverco/tree-sitter-kulala";
 import { configparser } from "./../configparser";
 
@@ -209,6 +209,7 @@ const parse = (content: string): Document | null => {
         node.children.forEach((child) => {
           let postRequestScript: PostRequestScript | null = null;
           let parts, key, value;
+
           switch (child.type) {
             case "method":
               method = child.text.toUpperCase();
@@ -262,7 +263,10 @@ const parse = (content: string): Document | null => {
           method = config.defaults.http_method;
         }
 
-        if (httpVersion === "") {
+        if (
+          httpVersion === "" &&
+          !["WS", "WSS"].includes(method.toUpperCase())
+        ) {
           httpVersion = config.defaults.http_version;
         }
       }

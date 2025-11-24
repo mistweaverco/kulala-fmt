@@ -1,5 +1,5 @@
 import * as prettier from "prettier";
-import type { Document, Block, Header } from "./DocumentParser";
+import type { Block, Document, Header } from "./DocumentParser";
 
 function headerToPascalCase(str: string) {
   return str
@@ -140,7 +140,16 @@ const build = async (
     }
     if (block.request) {
       const formatParser = getFormatParser(block);
-      output += `${block.request.method} ${block.request.url} ${block.request.httpVersion}\n`;
+      output += `${block.request.method} ${block.request.url}`;
+      // Only include HTTP version for non-websocket requests
+      if (
+        block.request.httpVersion !== "" &&
+        !["WS", "WSS"].includes(block.request.method.toUpperCase())
+      ) {
+        output += ` ${block.request.httpVersion}\n`;
+      } else {
+        output += `\n`;
+      }
       for (const header of block.request.headers) {
         let headerKey = header.key;
         switch (block.request.httpVersion) {
