@@ -4,7 +4,7 @@
     "": {
       "name": "@mistweaverco/kulala-fmt",
       "dependencies": {
-        "@mistweaverco/tree-sitter-kulala": "1.9.0",
+        "@mistweaverco/tree-sitter-kulala": "1.11.1",
         "prettier": "^3.5.2",
         "tree-sitter": "0.22.4",
       },
@@ -66,7 +66,7 @@
 
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.0", "", {}, "sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ=="],
 
-    "@mistweaverco/tree-sitter-kulala": ["@mistweaverco/tree-sitter-kulala@1.9.0", "", { "dependencies": { "node-addon-api": "8.1.0", "node-gyp-build": "4.8.2" } }, "sha512-4F+kCZFEvurSGrWM52lnowXBOqQ5+nfzxp55ufCqTdDSzSI92kySHmlhF7d2g/ZW4Jjrbromh1WH9XK/mHPbzQ=="],
+    "@mistweaverco/tree-sitter-kulala": ["@mistweaverco/tree-sitter-kulala@1.11.1", "", { "dependencies": { "node-addon-api": "8.1.0", "node-gyp-build": "4.8.2" } }, "sha512-uOpmLO57fEcDzRFhX2swDxyBTQBypVzgX19+7KUEK0s+m0YydZH1vfFxYiRQpyi5xToC+v0EUoU17/zmG8lF0w=="],
 
     "@nodelib/fs.scandir": ["@nodelib/fs.scandir@2.1.5", "", { "dependencies": { "@nodelib/fs.stat": "2.0.5", "run-parallel": "^1.1.9" } }, "sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g=="],
 
