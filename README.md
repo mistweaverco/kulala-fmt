@@ -22,7 +22,22 @@ An opinionated 🦄 .http and .rest 🐼 files linter 💄 and formatter ⚡.
 
 ## Install
 
-Via npm:
+`node-gyp` is required to build the native dependencies of `kulala-fmt`,
+it comes bundled with npm but not with bun or similar tools.
+
+`node-gyp` requires Python and a C++ compiler.
+
+- Mac: Run `xcode-select --install` in your terminal.
+- Windows: Run `bun install --save-exact --global --trust windows-build-tools`
+  from an administrative shell, or
+  install Visual Studio Community with C++ workloads.
+- Linux: Run `sudo apt install build-essential python3`
+  (or your distro's equivalent).
+
+### NPM
+
+No need to install `node-gyp` globally since it comes bundled with npm,
+you can just run:
 
 ```sh
 npm install -g @mistweaverco/kulala-fmt
@@ -36,6 +51,14 @@ npx @mistweaverco/kulala-fmt format file.http
 
 # Directly from GitHub
 npx github:mistweaverco/kulala-fmt format file.http
+```
+
+### Bun
+
+Since bun doesn't come with `node-gyp` bundled, you need to install it globally:
+
+```sh
+bun add --save-exact --global --trust node-gyp
 ```
 
 ## Usage
