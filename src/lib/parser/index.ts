@@ -3,12 +3,12 @@ import * as process from "process";
 import chalk from "chalk";
 import yaml from "js-yaml";
 import { fileWalker } from "./../filewalker";
-import { DocumentParser } from "./DocumentParser";
 import { DocumentBuilder } from "./DocumentBuilder";
 import { Diff } from "./Diff";
 import { OpenAPIDocumentParser, OpenAPISpec } from "./OpenAPIDocumentParser";
 import { PostmanDocumentParser } from "./PostmanDocumentParser";
 import { BrunoDocumentParser } from "./BrunoDocumentParser";
+import { kulalaCore } from "../kulala-core";
 
 const OpenAPIParser = new OpenAPIDocumentParser();
 const PostmanParser = new PostmanDocumentParser();
@@ -26,12 +26,15 @@ const isAlreadyPretty = async (
   options: { body: boolean },
 ): Promise<[boolean | null, string, string]> => {
   const content = fs.readFileSync(filepath, "utf-8");
-  const document = DocumentParser.parse(content);
-  if (!document) {
+  try {
+    const build = await kulalaCore.formatHttp(content, {
+      formatBody: options.body,
+      filepath,
+    });
+    return [content === build, content, build];
+  } catch {
     return [null, content, ""];
   }
-  const build = await DocumentBuilder.build(document, options.body);
-  return [content === build, content, build];
 };
 
 const makeFilePretty = async (
@@ -39,17 +42,19 @@ const makeFilePretty = async (
   formatBody: boolean,
 ): Promise<boolean | null> => {
   const content = fs.readFileSync(filepath, "utf-8");
-  const document = DocumentParser.parse(content);
-  // if document is null, that means we had an error parsing the file
-  if (!document) {
+  try {
+    const build = await kulalaCore.formatHttp(content, {
+      formatBody,
+      filepath,
+    });
+    const isPretty = content === build;
+    if (!isPretty) {
+      fs.writeFileSync(filepath, build, "utf-8");
+    }
+    return isPretty;
+  } catch {
     return null;
   }
-  const build = await DocumentBuilder.build(document, formatBody);
-  const isPretty = content === build;
-  if (!isPretty) {
-    fs.writeFileSync(filepath, build, "utf-8");
-  }
-  return isPretty;
 };
 
 const getStdinContent = async () => {
@@ -64,7 +69,9 @@ const getStdinContent = async () => {
   } catch (error) {
     console.error(
       chalk.red(
-        `Error reading stdin: ${error instanceof Error ? error?.message || error : error}`,
+        `Error reading stdin: ${
+          error instanceof Error ? error?.message || error : error
+        }`,
       ),
     );
 
@@ -75,26 +82,32 @@ const getStdinContent = async () => {
 const checkStdin = async (options: { body: boolean; verbose: boolean }) => {
   const content = await getStdinContent();
 
-  const document = DocumentParser.parse(content);
+  try {
+    const formattedDocument = await kulalaCore.formatHttp(content, {
+      formatBody: options.body,
+    });
 
-  if (!document) {
-    console.error(chalk.red("Error parsing input"));
-    return process.exit(1);
-  }
+    const isPretty = formattedDocument === content;
 
-  const formattedDocument = await DocumentBuilder.build(document, options.body);
+    if (isPretty) {
+      console.log(chalk.green("Input is pretty"));
+    } else {
+      console.error(chalk.yellow("Input is not pretty"));
 
-  const isPretty = formattedDocument === content;
+      if (options.verbose) {
+        Diff(formattedDocument, content);
+      }
 
-  if (isPretty) {
-    console.log(chalk.green("Input is pretty"));
-  } else {
-    console.error(chalk.yellow("Input is not pretty"));
-
-    if (options.verbose) {
-      Diff(formattedDocument, content);
+      return process.exit(1);
     }
-
+  } catch (error) {
+    console.error(
+      chalk.red(
+        `Error parsing input: ${
+          error instanceof Error ? error.message : error
+        }`,
+      ),
+    );
     return process.exit(1);
   }
 };
@@ -147,16 +160,21 @@ export const check = async (
 export const formatStdin = async (formatBody: boolean) => {
   const content = await getStdinContent();
 
-  const document = DocumentParser.parse(content);
-
-  if (!document) {
-    console.error(chalk.red("Error parsing input"));
+  try {
+    const formattedDocument = await kulalaCore.formatHttp(content, {
+      formatBody,
+    });
+    process.stdout.write(formattedDocument);
+  } catch (error) {
+    console.error(
+      chalk.red(
+        `Error parsing input: ${
+          error instanceof Error ? error.message : error
+        }`,
+      ),
+    );
     return process.exit(1);
   }
-
-  const formattedDocument = await DocumentBuilder.build(document, formatBody);
-
-  process.stdout.write(formattedDocument);
 };
 
 export const format = async (
@@ -197,8 +215,8 @@ const convertFromOpenAPI = async (files: string[]): Promise<void> => {
   for (const file of files) {
     const json = getOpenAPISpecAsJSON(file);
     const { documents, serverUrls } = OpenAPIParser.parse(json);
-    serverUrls.forEach(async (serverUrl, index) => {
-      const build = await DocumentBuilder.build(documents[index]);
+    for (const [index, serverUrl] of serverUrls.entries()) {
+      const build = await DocumentBuilder.build(documents[index]!);
       const outputFilename = file.replace(/\.[^/.]+$/, `.${serverUrl}.http`);
       fs.writeFileSync(outputFilename, build, "utf-8");
       console.log(
@@ -206,7 +224,7 @@ const convertFromOpenAPI = async (files: string[]): Promise<void> => {
           `Converted OpenAPI spec file: ${file} --> ${outputFilename}`,
         ),
       );
-    });
+    }
   }
 };
 
@@ -227,10 +245,10 @@ const convertFromPostman = async (files: string[]): Promise<void> => {
 
 const convertFromBruno = async (files: string[]): Promise<void> => {
   const { documents, environmentNames, collectionName } = BrunoParser.parse(
-    files[0],
+    files[0]!,
   );
-  environmentNames.forEach(async (envName, idx) => {
-    const build = await DocumentBuilder.build(documents[idx]);
+  for (const [idx, envName] of environmentNames.entries()) {
+    const build = await DocumentBuilder.build(documents[idx]!);
     const outputFilename = `${collectionName}.${envName}.http`;
     fs.writeFileSync(outputFilename, build, "utf-8");
     console.log(
@@ -238,7 +256,7 @@ const convertFromBruno = async (files: string[]): Promise<void> => {
         `Converted Bruno collection: ${files[0]} --> ${outputFilename}`,
       ),
     );
-  });
+  }
 };
 
 const invalidFormat = (t: "src" | "dest", format: string): void => {

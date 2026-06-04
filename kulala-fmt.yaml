@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://kulala.app/kulala-fmt.schema.json
+---
+defaults:
+  http_method: GET
+  http_version: HTTP/1.1
+body:
+  format:
+    indent: 2
+    line_width: 80
+    expand_tabs: true

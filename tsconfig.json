@@ -5,10 +5,10 @@
     "outDir": "./dist",
     "rootDir": ".",
     "skipLibCheck": true,
-    "moduleResolution": "node",
     "target": "esnext",
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["node"]
   },
   "include": ["src/*.ts", "src/**/*.ts"],
   "exclude": ["dist", "node_modules"]

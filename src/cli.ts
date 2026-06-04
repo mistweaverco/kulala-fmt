@@ -1,6 +1,6 @@
 import pkg from "./../package.json";
 import { Command } from "commander";
-import { check, format, convert } from "./lib/parser";
+import { check, convert, format } from "./lib/parser";
 import { configparser } from "./lib/configparser";
 const program = new Command();
 
@@ -12,10 +12,11 @@ program
   .version(pkg.version);
 
 program
-  .command("format")
+  .command("fix")
+  .alias("format")
   .description("Format files")
   .argument("[files]", "files to include", null)
-  .option("--body", "also format the body", true)
+  .option("--no-body", "skip formatting the body")
   .option("--stdin", "read input from stdin, print output to stdout", false)
   .action(async (files, options) => {
     await format(files, options);
@@ -26,7 +27,7 @@ program
   .description("Check if files are well formatted")
   .argument("[files]", "files to include", null)
   .option("-v, --verbose", "enable verbose mode", false)
-  .option("--body", "also format the body", true)
+  .option("--no-body", "skip formatting the body when checking")
   .option("--stdin", "read input from stdin", false)
   .action(async (files, options) => {
     await check(files, options);
