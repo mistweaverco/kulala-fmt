@@ -22,69 +22,53 @@ An opinionated 🦄 .http and .rest 🐼 files linter 💄 and formatter ⚡.
 
 ## Install
 
-`node-gyp` is required to build the native dependencies of `kulala-fmt`,
-it comes bundled with npm but not with bun or similar tools.
-
-`node-gyp` requires Python and a C++ compiler.
-
-- Mac: Run `xcode-select --install` in your terminal.
-- Windows: Run `bun install --save-exact --global --trust windows-build-tools`
-  from an administrative shell, or
-  install Visual Studio Community with C++ workloads.
-- Linux: Run `sudo apt install build-essential python3`
-  (or your distro's equivalent).
-
 ### NPM
-
-No need to install `node-gyp` globally since it comes bundled with npm,
-you can just run:
 
 ```sh
 npm install -g @mistweaverco/kulala-fmt
 ```
 
-You can also run it directly without installation using npx:
+You can also run it directly without installation using
+
+`npx`, `bunx` or `pnpx`:
 
 ```sh
-# From npm registry
-npx @mistweaverco/kulala-fmt format file.http
-
-# Directly from GitHub
-npx github:mistweaverco/kulala-fmt format file.http
+npx @mistweaverco/kulala-fmt fix file.http
+bunx @mistweaverco/kulala-fmt fix file.http
+pnpx @mistweaverco/kulala-fmt fix file.http
 ```
 
-### Bun
-
-Since bun doesn't come with `node-gyp` bundled, you need to install it globally:
-
-```sh
-bun add --save-exact --global --trust node-gyp
-```
 
 ## Usage
 
-kulala-fmt can `format` and `check` `.http` and `.rest` files.
+kulala-fmt can `fix`(alias `format`) and `check` `.http` and `.rest` files.
 
 It can also `convert` OpenAPI `.yaml`, `.yml` or `.json` files to `.http` files.
 
-### Format
+### Format / Fix
 
 Format all `.http` and `.rest` files in the current directory and its subdirectories:
 
 ```sh
-kulala-fmt format
+kulala-fmt fix
 ```
+
+or
+
+```sh
+kulala-fmt format
+```  
 
 Format specific `.http` and `.rest` files.
 
 ```sh
-kulala-fmt format file1.http file2.rest http/*.http
+kulala-fmt fix file1.http file2.rest http/*.http
 ```
 
 Format stdin input:
 
 ```sh
-cat SOMEFILE.http | kulala-fmt format --stdin
+cat SOMEFILE.http | kulala-fmt fix --stdin
 ```
 
 ### Check
@@ -119,7 +103,7 @@ kulala-fmt check --verbose file1.http file2.rest http/*.http
 Check stdin input:
 
 ```sh
-cat SOMEFILE.http | kulala-fmt format --stdin
+cat SOMEFILE.http | kulala-fmt fix --stdin
 ```
 
 ### Convert
@@ -152,22 +136,19 @@ kulala-fmt convert --from bruno path/to/bruno/collection
 
 - Checks if the file is formatted and valid
 - Removes extraneous newlines
-- Makes sure document variables are at the top of the file
 - Lowercases all headers (when HTTP/2 or HTTP/3) else it will uppercase the first letter
 - Puts all metadata right before the request line
-- Ensures all comments are at the top of the request
 
 So a perfect request would look like this:
 
 ```http
 @variables1 = value1
 
-
 ### REQUEST_NAME_ONE
 
 # This is a comment
 # This is another comment
-# @someother metatag
+# @kulala-curl--insecure
 GET http://localhost:8080/api/v1/health HTTP/1.1
 Content-Type: application/json
 
@@ -181,12 +162,11 @@ or this:
 ```http
 @variables1 = value1
 
-
 ### REQUEST_NAME_ONE
 
 # This is a comment
 # This is another comment
-# @someother metatag
+# @kulala-curl--insecure
 GET http://localhost:8080/api/v1/health HTTP/2
 content-type: application/json
 
