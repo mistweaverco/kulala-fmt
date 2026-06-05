@@ -9,7 +9,14 @@ const CONFIG_FILENAME = "kulala-fmt.yaml";
 export interface Config {
   defaults: {
     http_method: string;
-    http_version: string;
+    http_version: string | false;
+  };
+  body: {
+    format: {
+      indent: number;
+      line_width: number;
+      expand_tabs: boolean;
+    };
   };
 }
 
@@ -18,11 +25,18 @@ const DEFAULT_CONFIG: Config = {
     http_method: "GET",
     http_version: "HTTP/1.1",
   },
+  body: {
+    format: {
+      indent: 2,
+      line_width: 80,
+      expand_tabs: true,
+    },
+  },
 };
 
 const init = (): void => {
   const file = path.join(process.cwd(), CONFIG_FILENAME);
-  const configHeader = `# yaml-language-server: $schema=https://fmt.getkulala.net/schema.json\n---\n`;
+  const configHeader = `# yaml-language-server: $schema=https://kulala.app/kulala-fmt.schema.json\n---\n`;
   if (fs.existsSync(file)) {
     console.log(chalk.red(`🦄 Config file already exists: ${file}`));
     const rl = readline.createInterface({
@@ -55,8 +69,16 @@ const parse = (): Config => {
     return DEFAULT_CONFIG;
   }
   const content = fs.readFileSync(file, "utf8");
-  const json = yaml.load(content) as Config;
-  return { ...DEFAULT_CONFIG, ...json };
+  const json = yaml.load(content) as Partial<Config>;
+  return {
+    defaults: { ...DEFAULT_CONFIG.defaults, ...json.defaults },
+    body: {
+      format: {
+        ...DEFAULT_CONFIG.body.format,
+        ...json.body?.format,
+      },
+    },
+  };
 };
 
 export const configparser = {
