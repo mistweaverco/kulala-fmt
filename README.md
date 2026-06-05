@@ -22,19 +22,23 @@ An opinionated 🦄 .http and .rest 🐼 files linter 💄 and formatter ⚡.
 
 ## Install
 
-### NPM
+You can install kulala-fmt globally using `npm`, `bun`, `yarn` or `pnpm`:
 
 ```sh
 npm install -g @mistweaverco/kulala-fmt
+bun add -g @mistweaverco/kulala-fmt
+yarn global add @mistweaverco/kulala-fmt
+pnpm add -g @mistweaverco/kulala-fmt
 ```
 
 You can also run it directly without installation using
 
-`npx`, `bunx` or `pnpx`:
+`npx`, `bunx`, `yarn dlx` or `pnpx`:
 
 ```sh
 npx @mistweaverco/kulala-fmt fix file.http
 bunx @mistweaverco/kulala-fmt fix file.http
+yarn dlx @mistweaverco/kulala-fmt fix file.http
 pnpx @mistweaverco/kulala-fmt fix file.http
 ```
 
