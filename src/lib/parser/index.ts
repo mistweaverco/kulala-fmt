@@ -90,12 +90,12 @@ const checkStdin = async (options: { body: boolean; verbose: boolean }) => {
     const isPretty = formattedDocument === content;
 
     if (isPretty) {
-      console.log(chalk.green("Input is pretty"));
+      console.log(chalk.green("Input is pretty ✅"));
     } else {
-      console.error(chalk.yellow("Input is not pretty"));
+      console.error(chalk.red("Input is not pretty ❌"));
 
       if (options.verbose) {
-        Diff(formattedDocument, content);
+        Diff(formattedDocument, content, { filepath: "stdin" });
       }
 
       return process.exit(1);
@@ -143,7 +143,7 @@ export const check = async (
     if (isPretty === false) {
       console.log(chalk.yellow(`File not pretty: ${file}`));
       if (options.verbose) {
-        Diff(build, content);
+        Diff(build, content, { filepath: file });
       }
     } else if (isPretty === null) {
       console.log(chalk.red(`Error parsing file: ${file}`));
