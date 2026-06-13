@@ -1,6 +1,6 @@
-import fs from "fs";
-import path from "path";
-import chalk from "chalk";
+import fs from 'fs';
+import path from 'path';
+import chalk from 'chalk';
 
 /**
  * Walks a directory recursively (or processes a single file) and returns an array of file paths

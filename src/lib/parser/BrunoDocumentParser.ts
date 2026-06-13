@@ -1,12 +1,12 @@
-import { BrunoToJSONParser } from "./BrunoToJson";
-import { readFileSync, readdirSync, statSync } from "fs";
-import { join, relative } from "path";
-import type { Document, Block, Header, Variable } from "./DocumentParser";
+import { BrunoToJSONParser } from './BrunoToJson';
+import { readFileSync, readdirSync, statSync } from 'fs';
+import { join, relative } from 'path';
+import type { Document, Block, Header, Variable } from './DocumentParser';
 
 interface BrunoCollection {
   version: string;
   name: string;
-  type: "collection";
+  type: 'collection';
   ignore?: string[];
 }
 
@@ -42,7 +42,7 @@ interface BrunoRequest {
       type?: string;
     }>;
   };
-  "script:pre-request"?: string;
+  'script:pre-request'?: string;
   tests?: string;
 }
 
@@ -62,7 +62,7 @@ let collectionInfo: BrunoCollection | undefined;
 
 export class BrunoDocumentParser {
   private parseEnvironmentBruFile(content: string): BrunoEnvironmentVars {
-    const lines = content.split("\n");
+    const lines = content.split('\n');
     const environment: BrunoEnvironmentVars = { vars: {} };
     let isInVarsBlock = false;
 
@@ -71,17 +71,17 @@ export class BrunoDocumentParser {
 
       if (!trimmedLine) continue;
 
-      if (trimmedLine === "vars {") {
+      if (trimmedLine === 'vars {') {
         isInVarsBlock = true;
         continue;
-      } else if (trimmedLine === "}" && isInVarsBlock) {
+      } else if (trimmedLine === '}' && isInVarsBlock) {
         isInVarsBlock = false;
         continue;
       }
 
       if (isInVarsBlock && environment.vars) {
-        const [key, ...valueParts] = trimmedLine.split(":").map((part) => part.trim());
-        const value = valueParts.join(":").replace(/^"(.*)"$/, "$1"); // Remove quotes if present
+        const [key, ...valueParts] = trimmedLine.split(':').map((part) => part.trim());
+        const value = valueParts.join(':').replace(/^"(.*)"$/, '$1'); // Remove quotes if present
         if (key && value) {
           environment.vars[key] = value;
         }
@@ -93,9 +93,9 @@ export class BrunoDocumentParser {
 
   private buildRequestBlock(bruRequest: BrunoRequest, folderPath: string): Block {
     const request = {
-      method: (bruRequest.http?.method || "POST").toUpperCase(),
-      url: bruRequest.http?.url || bruRequest.meta?.url || "",
-      httpVersion: "HTTP/1.1",
+      method: (bruRequest.http?.method || 'POST').toUpperCase(),
+      url: bruRequest.http?.url || bruRequest.meta?.url || '',
+      httpVersion: 'HTTP/1.1',
       headers: [] as Header[],
       body: null as string | null,
     };
@@ -119,8 +119,8 @@ export class BrunoDocumentParser {
     if (bruRequest.meta?.name) {
       block.comments.push(`# ${bruRequest.meta.name}\n`);
       block.metadata.push({
-        key: "name",
-        value: bruRequest.meta.name.replace(/\s+/g, "_").toUpperCase(),
+        key: 'name',
+        value: bruRequest.meta.name.replace(/\s+/g, '_').toUpperCase(),
       });
     }
 
@@ -139,9 +139,9 @@ export class BrunoDocumentParser {
     // Handle GraphQL specific headers and body
     if (bruRequest.body?.graphql) {
       request.headers.push(
-        { key: "Accept", value: "application/json" },
-        { key: "Content-Type", value: "application/json" },
-        { key: "X-REQUEST-TYPE", value: "GraphQL" },
+        { key: 'Accept', value: 'application/json' },
+        { key: 'Content-Type', value: 'application/json' },
+        { key: 'X-REQUEST-TYPE', value: 'GraphQL' },
       );
 
       const query = bruRequest.body.graphql.query;
@@ -150,16 +150,16 @@ export class BrunoDocumentParser {
       if (query) {
         request.body = query;
         if (variables) {
-          request.body += "\n\n" + variables;
+          request.body += '\n\n' + variables;
         }
       }
     } else if (bruRequest.body?.json) {
       request.body = bruRequest.body.json;
 
-      if (!request.headers.some((h) => h.key.toLowerCase() === "content-type")) {
+      if (!request.headers.some((h) => h.key.toLowerCase() === 'content-type')) {
         request.headers.push({
-          key: "Content-Type",
-          value: "application/json",
+          key: 'Content-Type',
+          value: 'application/json',
         });
       }
     } else if (bruRequest.body?.formUrlEncoded) {
@@ -167,7 +167,7 @@ export class BrunoDocumentParser {
       const formParts: string[] = [];
 
       // Log the form data for debugging
-      console.log("Form data:", formEntries);
+      console.log('Form data:', formEntries);
 
       if (Array.isArray(formEntries)) {
         formEntries
@@ -183,37 +183,37 @@ export class BrunoDocumentParser {
           });
       }
 
-      request.body = formParts.join("&");
+      request.body = formParts.join('&');
 
       request.headers.push({
-        key: "Content-Type",
-        value: "application/x-www-form-urlencoded",
+        key: 'Content-Type',
+        value: 'application/x-www-form-urlencoded',
       });
     } else if (bruRequest.body?.multipartForm) {
-      const boundary = "----WebKitFormBoundary" + Math.random().toString(36).slice(2);
+      const boundary = '----WebKitFormBoundary' + Math.random().toString(36).slice(2);
       const parts: string[] = [];
 
       bruRequest.body.multipartForm.forEach((field) => {
         parts.push(
           `--${boundary}\r\n` +
             `Content-Disposition: form-data; name="${field.name}"\r\n` +
-            (field.type ? `Content-Type: ${field.type}\r\n` : "") +
+            (field.type ? `Content-Type: ${field.type}\r\n` : '') +
             `\r\n${field.value}\r\n`,
         );
       });
       parts.push(`--${boundary}--\r\n`);
 
-      request.body = parts.join("");
+      request.body = parts.join('');
       request.headers.push({
-        key: "Content-Type",
+        key: 'Content-Type',
         value: `multipart/form-data; boundary=${boundary}`,
       });
     }
 
     // Handle scripts
-    if (bruRequest["script:pre-request"]) {
+    if (bruRequest['script:pre-request']) {
       block.preRequestScripts.push({
-        script: bruRequest["script:pre-request"].trim(),
+        script: bruRequest['script:pre-request'].trim(),
         inline: true,
       });
     }
@@ -241,7 +241,7 @@ export class BrunoDocumentParser {
       const stat = statSync(fullPath);
 
       // Skip the environments directory completely
-      if (item === "environments") {
+      if (item === 'environments') {
         continue;
       }
 
@@ -249,10 +249,10 @@ export class BrunoDocumentParser {
         const subDocument = this.processDirectory(fullPath);
         document.blocks.push(...subDocument.blocks);
         document.variables.push(...subDocument.variables);
-      } else if (item.endsWith(".bru")) {
-        const content = readFileSync(fullPath, "utf-8");
+      } else if (item.endsWith('.bru')) {
+        const content = readFileSync(fullPath, 'utf-8');
         const bruRequest = BrunoToJSONParser.parse(content) as BrunoRequest;
-        const relativePath = relative(dirPath, fullPath).replace(".bru", "");
+        const relativePath = relative(dirPath, fullPath).replace('.bru', '');
 
         const block = this.buildRequestBlock(bruRequest, relativePath);
         document.blocks.push(block);
@@ -264,18 +264,18 @@ export class BrunoDocumentParser {
 
   private getEnvironments(dirPath: string): EnvironmentInfo[] {
     const environments: EnvironmentInfo[] = [];
-    const environmentsDir = join(dirPath, "environments");
+    const environmentsDir = join(dirPath, 'environments');
 
     if (statSync(environmentsDir, { throwIfNoEntry: false })?.isDirectory()) {
       const envFiles = readdirSync(environmentsDir);
 
       for (const file of envFiles) {
-        if (file.endsWith(".bru")) {
-          const envContent = readFileSync(join(environmentsDir, file), "utf-8");
+        if (file.endsWith('.bru')) {
+          const envContent = readFileSync(join(environmentsDir, file), 'utf-8');
           const environment = this.parseEnvironmentBruFile(envContent);
 
           environments.push({
-            name: file.replace(".bru", ""),
+            name: file.replace('.bru', ''),
             vars: environment.vars || {},
           });
         }
@@ -287,8 +287,8 @@ export class BrunoDocumentParser {
 
   private readCollectionInfo(dirPath: string): BrunoCollection | undefined {
     try {
-      const brunoJsonPath = join(dirPath, "bruno.json");
-      const content = readFileSync(brunoJsonPath, "utf-8");
+      const brunoJsonPath = join(dirPath, 'bruno.json');
+      const content = readFileSync(brunoJsonPath, 'utf-8');
       return JSON.parse(content) as BrunoCollection;
     } catch {
       return undefined;
@@ -304,8 +304,8 @@ export class BrunoDocumentParser {
     if (environments.length === 0) {
       return {
         documents: [this.processDirectory(collectionPath)],
-        environmentNames: ["default"],
-        collectionName: collectionInfo?.name || "bruno-collection",
+        environmentNames: ['default'],
+        collectionName: collectionInfo?.name || 'bruno-collection',
       };
     }
 
@@ -325,7 +325,7 @@ export class BrunoDocumentParser {
     return {
       documents,
       environmentNames: environments.map((env) => env.name),
-      collectionName: collectionInfo?.name || "bruno-collection",
+      collectionName: collectionInfo?.name || 'bruno-collection',
     };
   }
 }

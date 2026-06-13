@@ -1,24 +1,24 @@
-import type { Document } from "./DocumentParser";
+import type { Document } from './DocumentParser';
 
 function replaceCommentPrefix(comment: string): string {
-  return comment.replace(/^(\/\/)/, "#");
+  return comment.replace(/^(\/\/)/, '#');
 }
 
 /** Serialize a local Document to rough .http text for kulala-core to format. */
 export function documentToHttp(document: Document): string {
-  let output = "";
+  let output = '';
 
   for (const variable of document.variables) {
     output += `@${variable.key} = ${variable.value}\n`;
   }
   if (document.variables.length > 0) {
-    output += "\n";
+    output += '\n';
   }
 
   for (const block of document.blocks) {
     const requestSeparatorText = block.requestSeparator.text
       ? ` ${block.requestSeparator.text}`
-      : "";
+      : '';
     output += `\n###${requestSeparatorText}\n\n`;
 
     for (const comment of block.comments) {
@@ -36,12 +36,12 @@ export function documentToHttp(document: Document): string {
     if (block.request) {
       output += `${block.request.method} ${block.request.url}`;
       if (
-        block.request.httpVersion !== "" &&
-        !["WEBSOCKET", "GRPC"].includes(block.request.method.toUpperCase())
+        block.request.httpVersion !== '' &&
+        !['WEBSOCKET', 'GRPC'].includes(block.request.method.toUpperCase())
       ) {
         output += ` ${block.request.httpVersion}\n`;
       } else {
-        output += "\n";
+        output += '\n';
       }
 
       for (const header of block.request.headers) {
@@ -62,5 +62,5 @@ export function documentToHttp(document: Document): string {
     }
   }
 
-  return output.trim() + "\n";
+  return output.trim() + '\n';
 }
