@@ -46,8 +46,7 @@ function invoke(payload: Record<string, unknown>): unknown {
 
   if (result.status !== 0) {
     throw new Error(
-      result.stderr?.trim() ||
-        `kulala-core exited with code ${result.status ?? "unknown"}`,
+      result.stderr?.trim() || `kulala-core exited with code ${result.status ?? "unknown"}`,
     );
   }
 
@@ -59,10 +58,7 @@ function invoke(payload: Record<string, unknown>): unknown {
   return JSON.parse(stdout);
 }
 
-export async function formatHttp(
-  content: string,
-  options: FormatOptions = {},
-): Promise<string> {
+export async function formatHttp(content: string, options: FormatOptions = {}): Promise<string> {
   await executablePath();
   const config = configparser.parse();
 

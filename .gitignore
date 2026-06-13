@@ -5,6 +5,8 @@
 *.so
 *.dylib
 src/lib/downloader/bin/*
+dist/*
+tmp/*
 
 # Test binary, built with `go test -c`
 *.test
@@ -22,3 +24,4 @@ http-client.private.env.json
 *.http
 
 node_modules
+.pnpm-store

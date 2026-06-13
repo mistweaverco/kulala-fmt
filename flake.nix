@@ -1,4 +1,8 @@
-#NOTE: This is quite bad way to do this, but until Nix have a proper way to package bun projects it works. See https://github.com/NixOS/nixpkgs/issues/255890
+# NOTE:
+# This is quite bad way to do this,
+# but until Nix has a proper way to package
+# node projects it works.
+# See https://github.com/NixOS/nixpkgs/issues/255890
 {
   description = "A formatter for the Kulala language";
 
@@ -36,13 +40,14 @@
         devShells.default = pkgs.mkShell {
           buildInputs = [
             pkgs.nodejs
-            pkgs.bun
+            pkgs.nodePackages.pnpm
           ];
 
           shellHook = ''
             echo "Kulala formatter development environment"
-            echo "Run 'bun install' to install dependencies"
-            echo "Run 'bun run build' to build the project"
+            echo "Run 'pnpm install' to install dependencies"
+            echo "Run 'pnpm run build' to build the project"
+            echo "Run 'node ./dist/install-backend.cjs' to download kulala-core""
           '';
         };
       };

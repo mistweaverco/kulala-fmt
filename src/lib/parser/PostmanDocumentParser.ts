@@ -123,13 +123,8 @@ export class PostmanDocumentParser {
         block.request.body = item.request.body.raw;
 
         // Add Content-Type header if not present
-        const contentType =
-          item.request.body.options?.raw?.language || "text/plain";
-        if (
-          !block.request.headers.some(
-            (h) => h.key.toLowerCase() === "content-type",
-          )
-        ) {
+        const contentType = item.request.body.options?.raw?.language || "text/plain";
+        if (!block.request.headers.some((h) => h.key.toLowerCase() === "content-type")) {
           block.request.headers.push({
             key: "Content-Type",
             value: this.getContentType(contentType),
@@ -185,9 +180,7 @@ export class PostmanDocumentParser {
     }
   }
 
-  private isItemGroup(
-    item: PostmanItem | PostmanItemGroup,
-  ): item is PostmanItemGroup {
+  private isItemGroup(item: PostmanItem | PostmanItemGroup): item is PostmanItemGroup {
     return "item" in item;
   }
 

@@ -6,9 +6,7 @@ const program = new Command();
 
 program
   .name("kulala-fmt")
-  .description(
-    "An opinionated 🦄 .http and .rest 🐼 files linter 💄 and formatter ⚡.",
-  )
+  .description("An opinionated 🦄 .http and .rest 🐼 files linter 💄 and formatter ⚡.")
   .version(pkg.version);
 
 program
@@ -26,7 +24,7 @@ program
   .command("check")
   .description("Check if files are well formatted")
   .argument("[files]", "files to include", null)
-  .option("-v, --verbose", "enable verbose mode", false)
+  .option("-q, --quiet", "suppress diff output", false)
   .option("--no-body", "skip formatting the body when checking")
   .option("--stdin", "read input from stdin", false)
   .action(async (files, options) => {

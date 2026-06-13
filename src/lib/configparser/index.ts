@@ -1,4 +1,4 @@
-import * as fs from "fs";
+import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
 import chalk from "chalk";
@@ -43,20 +43,17 @@ const init = (): void => {
       input: process.stdin,
       output: process.stdout,
     });
-    rl.question(
-      `Do you want to overwrite the file? (y/N) `,
-      (answer: string) => {
-        if (answer.toLowerCase() === "y") {
-          fs.writeFileSync(file, configHeader + yaml.dump(DEFAULT_CONFIG));
-          console.log(chalk.green(`🦄 Config file written: ${file}`));
-        } else if (answer.toLowerCase() === "n") {
-          console.log(chalk.yellow("🦄 Exiting..."));
-        } else {
-          console.log(chalk.red("🦄 Invalid input"));
-        }
-        rl.close();
-      },
-    );
+    rl.question(`Do you want to overwrite the file? (y/N) `, (answer: string) => {
+      if (answer.toLowerCase() === "y") {
+        fs.writeFileSync(file, configHeader + yaml.dump(DEFAULT_CONFIG));
+        console.log(chalk.green(`🦄 Config file written: ${file}`));
+      } else if (answer.toLowerCase() === "n") {
+        console.log(chalk.yellow("🦄 Exiting..."));
+      } else {
+        console.log(chalk.red("🦄 Invalid input"));
+      }
+      rl.close();
+    });
   } else {
     fs.writeFileSync(file, configHeader + yaml.dump(DEFAULT_CONFIG));
     console.log(chalk.green(`🦄 Config file written: ${file}`));

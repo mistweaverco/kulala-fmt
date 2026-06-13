@@ -8,6 +8,7 @@
     "target": "esnext",
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "moduleResolution": "node",
     "types": ["node"]
   },
   "include": ["src/*.ts", "src/**/*.ts"],
