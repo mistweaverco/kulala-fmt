@@ -1,6 +1,6 @@
 {
   "name": "@mistweaverco/kulala-fmt",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "type": "module",
   "scripts": {
     "build": "./node_modules/.bin/rollup -c",
