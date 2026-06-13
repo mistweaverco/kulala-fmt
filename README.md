@@ -1,16 +1,17 @@
 <div align="center">
 
-![Kulala-fmt Logo](logo.svg)
+![Kulala-fmt Logo][logo]
 
 # kulala-fmt
 
-[![NPM](https://img.shields.io/npm/v/@mistweaverco/kulala-fmt?style=for-the-badge)](https://www.npmjs.com/package/@mistweaverco/kulala-fmt)
-[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6.svg?style=for-the-badge&logo=typescript&logoColor=FFF)](https://www.typescriptlang.org/)
-[![Rollup](https://img.shields.io/badge/Rollup-bd0f0f.svg?style=for-the-badge&logo=rollup.js&logoColor=FFF)](https://rollupjs.org/)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/mistweaverco/kulala-fmt?style=for-the-badge)](https://github.com/mistweaverco/kulala-fmt/releases/latest)
-[![Discord](https://img.shields.io/badge/discord-join-7289da?style=for-the-badge&logo=discord)](https://discord.gg/QyVQmfY4Rt)
+[![npm][badge-npm]][link-npm]
+[![latest release][badge-github]][link-github]
+[![Discord][badge-discord]][discord]
 
-[Install](#install) • [Usage](#usage)
+[Install](#install) •
+[Usage](#usage) •
+[Configuration](#configuration) •
+[Development](#development)
 
 <p></p>
 
@@ -42,6 +43,13 @@ yarn dlx @mistweaverco/kulala-fmt fix file.http
 pnpx @mistweaverco/kulala-fmt fix file.http
 ```
 
+On install, kulala-fmt downloads a matching [kulala-core](https://github.com/mistweaverco/kulala-core) binary automatically. If install scripts are disabled (for example `npm install --ignore-scripts`), the binary is downloaded on first use instead.
+
+To use your own kulala-core binary, set `KULALA_CORE_PATH`:
+
+```sh
+export KULALA_CORE_PATH=/path/to/kulala-core
+```
 
 ## Usage
 
@@ -57,16 +65,28 @@ Format all `.http` and `.rest` files in the current directory and its subdirecto
 kulala-fmt fix
 ```
 
+Format files in a specific directory:
+
+```sh
+kulala-fmt fix path/to/requests
+```
+
 or
 
 ```sh
 kulala-fmt format
-```  
+```
 
-Format specific `.http` and `.rest` files.
+Format specific `.http` and `.rest` files:
 
 ```sh
 kulala-fmt fix file1.http file2.rest http/*.http
+```
+
+Skip formatting request bodies:
+
+```sh
+kulala-fmt fix --no-body file.http
 ```
 
 Format stdin input:
@@ -77,10 +97,23 @@ cat SOMEFILE.http | kulala-fmt fix --stdin
 
 ### Check
 
-Check if all `.http` and `.rest` files in the current directory and its subdirectories are formatted:
+Check if all `.http` and `.rest` files in the current directory and
+its subdirectories are formatted (shows a diff for files that need formatting):
 
 ```sh
 kulala-fmt check
+```
+
+Check a specific directory:
+
+```sh
+kulala-fmt check path/to/requests
+```
+
+Check without diff output:
+
+```sh
+kulala-fmt check --quiet
 ```
 
 Check if specific `.http` and `.rest` files are formatted:
@@ -89,25 +122,10 @@ Check if specific `.http` and `.rest` files are formatted:
 kulala-fmt check file1.http file2.rest http/*.http
 ```
 
-Check if all `.http` and `.rest` files in the current directory and
-its subdirectories are formatted and
-prints the desired output to the console:
-
-```sh
-kulala-fmt check --verbose
-```
-
-Check if specific `.http` and `.rest` files are formatted and
-prints the desired output to the console:
-
-```sh
-kulala-fmt check --verbose file1.http file2.rest http/*.http
-```
-
 Check stdin input:
 
 ```sh
-cat SOMEFILE.http | kulala-fmt fix --stdin
+cat SOMEFILE.http | kulala-fmt check --stdin
 ```
 
 ### Convert
@@ -136,47 +154,96 @@ Convert Bruno collections to `.http` files:
 kulala-fmt convert --from bruno path/to/bruno/collection
 ```
 
+## Configuration
+
+kulala-fmt reads `kulala-fmt.yaml` from the current working directory. Create one with:
+
+```sh
+kulala-fmt init
+```
+
+Example configuration:
+
+```yaml
+# yaml-language-server: $schema=https://kulala.app/kulala-fmt.schema.json
+defaults:
+  http_method: GET
+  http_version: HTTP/1.1
+body:
+  format:
+    indent: 2
+    line_width: 80
+    expand_tabs: true
+```
+
+All fields are optional.
+See [`config.schema.json`](./config.schema.json)
+or the published schema at
+https://kulala.app/kulala-fmt.schema.json for the full reference.
+
+`defaults.http_version` can also be set to `false` to
+omit the HTTP version from request lines.
+
 ## What does it do?
 
 - Checks if the file is formatted and valid
 - Removes extraneous newlines
-- Lowercases all headers (when HTTP/2 or HTTP/3) else it will uppercase the first letter
+- Lowercases all headers (when HTTP/2 or HTTP/3) else
+  it'll uppercase the first letter
 - Puts all metadata right before the request line
 
 So a perfect request would look like this:
 
 ```http
-@variables1 = value1
+@SOME_DOCUMENT_VARIABLE1 = some value
 
 ### REQUEST_NAME_ONE
 
 # This is a comment
-# This is another comment
 # @kulala-curl--insecure
-GET http://localhost:8080/api/v1/health HTTP/1.1
+# This is another comment
+
+POST https://echo.kulala.app/post HTTP/1.1
 Content-Type: application/json
 
 {
-  "key": "value"
+  "key": "{{ SOME_DOCUMENT_VARIABLE1 }}"
 }
 ```
 
 or this:
 
 ```http
-@variables1 = value1
+@SOME_DOCUMENT_VARIABLE1 = some value
 
 ### REQUEST_NAME_ONE
 
 # This is a comment
-# This is another comment
 # @kulala-curl--insecure
-GET http://localhost:8080/api/v1/health HTTP/2
+# This is another comment
+
+POST https://echo.kulala.app/post HTTP/2
 content-type: application/json
 
 {
-  "key": "value"
+  "key": "{{ SOME_DOCUMENT_VARIABLE1 }}"
 }
+```
+
+## Development
+
+Clone the repository and install dependencies with [pnpm](https://pnpm.io/):
+
+```sh
+pnpm install
+pnpm run build
+```
+
+Other useful commands:
+
+```sh
+pnpm run lint
+node dist/cli.cjs --help
 ```
 
 ## Use it with conform.nvim
@@ -186,18 +253,21 @@ return {
   "stevearc/conform.nvim",
   config = function()
     require("conform").setup({
-      formatters = {
-        kulala = {
-          command = "kulala-fmt",
-          args = { "format", "$FILENAME" },
-          stdin = false,
-        },
-      },
       formatters_by_ft = {
-        http = { "kulala" },
+        http = { "kulala-fmt" },
       },
       format_on_save = true,
     })
   end,
 }
 ```
+
+
+
+[logo]: https://raw.githubusercontent.com/mistweaverco/kulala-fmt/main/logo.svg
+[discord]: https://mistweaverco.com/discord
+[badge-discord]: https://mistweaverco.com/assets/badges/discord.svg
+[badge-github]: https://img.shields.io/github/v/release/mistweaverco/kulala-fmt?style=for-the-badge
+[link-github]: https://github.com/mistweaverco/kulala-fmt/releases/latest
+[badge-npm]: https://img.shields.io/npm/v/@mistweaverco/kulala-fmt?style=for-the-badge
+[link-npm]: https://www.npmjs.com/package/@mistweaverco/kulala-fmt

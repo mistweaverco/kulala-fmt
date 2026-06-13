@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
+import fs from "fs";
+import path from "path";
 import chalk from "chalk";
 
 /**
@@ -62,6 +62,6 @@ export function fileWalker(inputPath: string, extensions: string[]): string[] {
     }
   }
 
-  walk(rootDir);
+  walk(absolutePath);
   return filePaths;
 }

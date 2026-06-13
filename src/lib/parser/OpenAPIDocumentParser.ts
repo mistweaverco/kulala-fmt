@@ -110,11 +110,7 @@ interface ParseResult {
 }
 
 export class OpenAPIDocumentParser implements OpenAPIParser {
-  private buildRequestBlock(
-    path: string,
-    method: string,
-    operation: OpenAPIOperation,
-  ): Block {
+  private buildRequestBlock(path: string, method: string, operation: OpenAPIOperation): Block {
     const block: Block = {
       requestSeparator: {
         text: null,
@@ -175,9 +171,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
         if (mediaTypeObject.example) {
           block.request.body = JSON.stringify(mediaTypeObject.example, null, 2);
         } else if (mediaTypeObject.schema) {
-          block.request.body = this.generateExampleFromSchema(
-            mediaTypeObject.schema,
-          );
+          block.request.body = this.generateExampleFromSchema(mediaTypeObject.schema);
         }
       }
     }
@@ -234,10 +228,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     // Replace variable patterns with their default values or placeholder
     if (server.variables) {
       Object.entries(server.variables).forEach(([key, variable]) => {
-        identifier = identifier.replace(
-          `{${key}}`,
-          variable.default || `[${key}]`,
-        );
+        identifier = identifier.replace(`{${key}}`, variable.default || `[${key}]`);
       });
     }
 
@@ -262,9 +253,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     );
 
     // Extract server identifiers in matching order
-    const serverUrls = openAPISpec.servers.map((server) =>
-      this.extractServerIdentifier(server),
-    );
+    const serverUrls = openAPISpec.servers.map((server) => this.extractServerIdentifier(server));
 
     return {
       documents,
@@ -272,11 +261,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     };
   }
 
-  private buildFullUrl(
-    path: string,
-    server?: OpenAPIServer,
-    serverIndex?: number,
-  ): string {
+  private buildFullUrl(path: string, server?: OpenAPIServer, serverIndex?: number): string {
     if (!server) {
       return path;
     }

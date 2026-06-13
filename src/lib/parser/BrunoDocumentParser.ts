@@ -80,9 +80,7 @@ export class BrunoDocumentParser {
       }
 
       if (isInVarsBlock && environment.vars) {
-        const [key, ...valueParts] = trimmedLine
-          .split(":")
-          .map((part) => part.trim());
+        const [key, ...valueParts] = trimmedLine.split(":").map((part) => part.trim());
         const value = valueParts.join(":").replace(/^"(.*)"$/, "$1"); // Remove quotes if present
         if (key && value) {
           environment.vars[key] = value;
@@ -93,10 +91,7 @@ export class BrunoDocumentParser {
     return environment;
   }
 
-  private buildRequestBlock(
-    bruRequest: BrunoRequest,
-    folderPath: string,
-  ): Block {
+  private buildRequestBlock(bruRequest: BrunoRequest, folderPath: string): Block {
     const request = {
       method: (bruRequest.http?.method || "POST").toUpperCase(),
       url: bruRequest.http?.url || bruRequest.meta?.url || "",
@@ -161,9 +156,7 @@ export class BrunoDocumentParser {
     } else if (bruRequest.body?.json) {
       request.body = bruRequest.body.json;
 
-      if (
-        !request.headers.some((h) => h.key.toLowerCase() === "content-type")
-      ) {
+      if (!request.headers.some((h) => h.key.toLowerCase() === "content-type")) {
         request.headers.push({
           key: "Content-Type",
           value: "application/json",
@@ -180,20 +173,12 @@ export class BrunoDocumentParser {
         formEntries
           .filter((entry) => entry.enabled !== false)
           .forEach((entry) => {
-            if (
-              entry.name &&
-              entry.value !== undefined &&
-              entry.value !== null
-            ) {
+            if (entry.name && entry.value !== undefined && entry.value !== null) {
               const value = String(entry.value);
               // Don't encode {{variables}}
-              const encodedValue = value.match(/^{{.*}}$/)
-                ? value
-                : encodeURIComponent(value);
+              const encodedValue = value.match(/^{{.*}}$/) ? value : encodeURIComponent(value);
 
-              formParts.push(
-                `${encodeURIComponent(entry.name)}=${encodedValue}`,
-              );
+              formParts.push(`${encodeURIComponent(entry.name)}=${encodedValue}`);
             }
           });
       }
@@ -205,8 +190,7 @@ export class BrunoDocumentParser {
         value: "application/x-www-form-urlencoded",
       });
     } else if (bruRequest.body?.multipartForm) {
-      const boundary =
-        "----WebKitFormBoundary" + Math.random().toString(36).slice(2);
+      const boundary = "----WebKitFormBoundary" + Math.random().toString(36).slice(2);
       const parts: string[] = [];
 
       bruRequest.body.multipartForm.forEach((field) => {

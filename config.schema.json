@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kulala.app/kulala-fmt.schema.json",
+  "title": "kulala-fmt configuration",
+  "description": "Configuration for kulala-fmt. All fields are optional; missing values fall back to the defaults shown below.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "defaults": {
+      "type": "object",
+      "description": "Default values applied when formatting HTTP requests.",
+      "additionalProperties": false,
+      "properties": {
+        "http_method": {
+          "type": "string",
+          "enum": [
+            "DELETE",
+            "GET",
+            "GRAPHQL",
+            "GRPC",
+            "HEAD",
+            "OPTIONS",
+            "PATCH",
+            "POST",
+            "PUT",
+            "WEBSOCKET"
+          ],
+          "default": "GET",
+          "description": "Default HTTP method for requests without one."
+        },
+        "http_version": {
+          "description": "Default HTTP version for requests without one. Set to false to omit the version from request lines.",
+          "default": "HTTP/1.1",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["HTTP/1.0", "HTTP/1.1", "HTTP/2"]
+            },
+            {
+              "type": "boolean",
+              "const": false
+            }
+          ]
+        }
+      }
+    },
+    "body": {
+      "type": "object",
+      "description": "Formatting options for request bodies.",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "type": "object",
+          "description": "Prettier options used when formatting JSON and GraphQL request bodies.",
+          "additionalProperties": false,
+          "properties": {
+            "indent": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 2,
+              "description": "Indent width in spaces when expand_tabs is true; tab stop width when expand_tabs is false."
+            },
+            "line_width": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 80,
+              "description": "Maximum line width before wrapping."
+            },
+            "expand_tabs": {
+              "type": "boolean",
+              "default": true,
+              "description": "When true, indent with spaces. When false, indent with tab characters."
+            }
+          }
+        }
+      }
+    }
+  }
+}

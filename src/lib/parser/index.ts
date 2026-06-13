@@ -1,5 +1,4 @@
-import * as fs from "fs";
-import * as process from "process";
+import fs from "fs";
 import chalk from "chalk";
 import yaml from "js-yaml";
 import { fileWalker } from "./../filewalker";
@@ -37,10 +36,7 @@ const isAlreadyPretty = async (
   }
 };
 
-const makeFilePretty = async (
-  filepath: string,
-  formatBody: boolean,
-): Promise<boolean | null> => {
+const makeFilePretty = async (filepath: string, formatBody: boolean): Promise<boolean | null> => {
   const content = fs.readFileSync(filepath, "utf-8");
   try {
     const build = await kulalaCore.formatHttp(content, {
@@ -68,18 +64,14 @@ const getStdinContent = async () => {
     return content;
   } catch (error) {
     console.error(
-      chalk.red(
-        `Error reading stdin: ${
-          error instanceof Error ? error?.message || error : error
-        }`,
-      ),
+      chalk.red(`Error reading stdin: ${error instanceof Error ? error?.message || error : error}`),
     );
 
     return process.exit(1);
   }
 };
 
-const checkStdin = async (options: { body: boolean; verbose: boolean }) => {
+const checkStdin = async (options: { body: boolean; quiet: boolean }) => {
   const content = await getStdinContent();
 
   try {
@@ -94,7 +86,7 @@ const checkStdin = async (options: { body: boolean; verbose: boolean }) => {
     } else {
       console.error(chalk.red("Input is not pretty ❌"));
 
-      if (options.verbose) {
+      if (!options.quiet) {
         Diff(formattedDocument, content, { filepath: "stdin" });
       }
 
@@ -102,11 +94,7 @@ const checkStdin = async (options: { body: boolean; verbose: boolean }) => {
     }
   } catch (error) {
     console.error(
-      chalk.red(
-        `Error parsing input: ${
-          error instanceof Error ? error.message : error
-        }`,
-      ),
+      chalk.red(`Error parsing input: ${error instanceof Error ? error.message : error}`),
     );
     return process.exit(1);
   }
@@ -116,13 +104,13 @@ const checkStdin = async (options: { body: boolean; verbose: boolean }) => {
  * Checks the validity of HTTP files in the given directory.
  *
  * @param {string} dirPath The directory path to check.
- * @param {{ verbose: boolean; body: boolean }} options The options to use.
+ * @param {{ quiet: boolean; body: boolean }} options The options to use.
  * @param {string[]} extensions An array of file extensions to filter by (e.g., ['.http', '.rest']).
  * @returns {CheckedFiles[]} An array of CheckedFiles objects.
  */
 export const check = async (
   dirPath: string | null,
-  options: { verbose: boolean; body: boolean; stdin: boolean },
+  options: { quiet: boolean; body: boolean; stdin: boolean },
   extensions: string[] | undefined = undefined,
 ): Promise<void> => {
   if (options.stdin) {
@@ -142,7 +130,7 @@ export const check = async (
     const [isPretty, content, build] = await isAlreadyPretty(file, options);
     if (isPretty === false) {
       console.log(chalk.yellow(`File not pretty: ${file}`));
-      if (options.verbose) {
+      if (!options.quiet) {
         Diff(build, content, { filepath: file });
       }
     } else if (isPretty === null) {
@@ -167,11 +155,7 @@ export const formatStdin = async (formatBody: boolean) => {
     process.stdout.write(formattedDocument);
   } catch (error) {
     console.error(
-      chalk.red(
-        `Error parsing input: ${
-          error instanceof Error ? error.message : error
-        }`,
-      ),
+      chalk.red(`Error parsing input: ${error instanceof Error ? error.message : error}`),
     );
     return process.exit(1);
   }
@@ -219,11 +203,7 @@ const convertFromOpenAPI = async (files: string[]): Promise<void> => {
       const build = await DocumentBuilder.build(documents[index]!);
       const outputFilename = file.replace(/\.[^/.]+$/, `.${serverUrl}.http`);
       fs.writeFileSync(outputFilename, build, "utf-8");
-      console.log(
-        chalk.green(
-          `Converted OpenAPI spec file: ${file} --> ${outputFilename}`,
-        ),
-      );
+      console.log(chalk.green(`Converted OpenAPI spec file: ${file} --> ${outputFilename}`));
     }
   }
 };
@@ -235,27 +215,17 @@ const convertFromPostman = async (files: string[]): Promise<void> => {
     const build = await DocumentBuilder.build(document);
     const outputFilename = file.replace(/\.[^/.]+$/, ".http");
     fs.writeFileSync(outputFilename, build, "utf-8");
-    console.log(
-      chalk.green(
-        `Converted PostMan Collection file: ${file} --> ${outputFilename}`,
-      ),
-    );
+    console.log(chalk.green(`Converted PostMan Collection file: ${file} --> ${outputFilename}`));
   }
 };
 
 const convertFromBruno = async (files: string[]): Promise<void> => {
-  const { documents, environmentNames, collectionName } = BrunoParser.parse(
-    files[0]!,
-  );
+  const { documents, environmentNames, collectionName } = BrunoParser.parse(files[0]!);
   for (const [idx, envName] of environmentNames.entries()) {
     const build = await DocumentBuilder.build(documents[idx]!);
     const outputFilename = `${collectionName}.${envName}.http`;
     fs.writeFileSync(outputFilename, build, "utf-8");
-    console.log(
-      chalk.green(
-        `Converted Bruno collection: ${files[0]} --> ${outputFilename}`,
-      ),
-    );
+    console.log(chalk.green(`Converted Bruno collection: ${files[0]} --> ${outputFilename}`));
   }
 };
 

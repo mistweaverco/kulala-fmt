@@ -196,10 +196,7 @@ const fileExtractContentType = (pair) => {
   }
 };
 
-const mapPairListToKeyValPairsMultipart = (
-  pairList = [],
-  parseEnabled = true,
-) => {
+const mapPairListToKeyValPairsMultipart = (pairList = [], parseEnabled = true) => {
   const pairs = mapPairListToKeyValPairs(pairList, parseEnabled);
 
   return pairs.map((pair) => {
@@ -282,8 +279,7 @@ const sem = grammar.createSemantics().addAttribute("ast", {
   value(chars) {
     try {
       let isMultiline =
-        chars.sourceString?.startsWith(`'''`) &&
-        chars.sourceString?.endsWith(`'''`);
+        chars.sourceString?.startsWith(`'''`) && chars.sourceString?.endsWith(`'''`);
       if (isMultiline) {
         const multilineString = chars.sourceString?.replace(/^'''|'''$/g, "");
         return multilineString
@@ -539,9 +535,7 @@ const sem = grammar.createSemantics().addAttribute("ast", {
           grantTypeKey?.value && grantTypeKey?.value == "password"
             ? {
                 grantType: grantTypeKey ? grantTypeKey.value : "",
-                accessTokenUrl: accessTokenUrlKey
-                  ? accessTokenUrlKey.value
-                  : "",
+                accessTokenUrl: accessTokenUrlKey ? accessTokenUrlKey.value : "",
                 username: usernameKey ? usernameKey.value : "",
                 password: passwordKey ? passwordKey.value : "",
                 clientId: clientIdKey ? clientIdKey.value : "",
@@ -552,25 +546,18 @@ const sem = grammar.createSemantics().addAttribute("ast", {
               ? {
                   grantType: grantTypeKey ? grantTypeKey.value : "",
                   callbackUrl: callbackUrlKey ? callbackUrlKey.value : "",
-                  authorizationUrl: authorizationUrlKey
-                    ? authorizationUrlKey.value
-                    : "",
-                  accessTokenUrl: accessTokenUrlKey
-                    ? accessTokenUrlKey.value
-                    : "",
+                  authorizationUrl: authorizationUrlKey ? authorizationUrlKey.value : "",
+                  accessTokenUrl: accessTokenUrlKey ? accessTokenUrlKey.value : "",
                   clientId: clientIdKey ? clientIdKey.value : "",
                   clientSecret: clientSecretKey ? clientSecretKey.value : "",
                   scope: scopeKey ? scopeKey.value : "",
                   state: stateKey ? stateKey.value : "",
                   pkce: pkceKey ? JSON.parse(pkceKey?.value || false) : false,
                 }
-              : grantTypeKey?.value &&
-                  grantTypeKey?.value == "client_credentials"
+              : grantTypeKey?.value && grantTypeKey?.value == "client_credentials"
                 ? {
                     grantType: grantTypeKey ? grantTypeKey.value : "",
-                    accessTokenUrl: accessTokenUrlKey
-                      ? accessTokenUrlKey.value
-                      : "",
+                    accessTokenUrl: accessTokenUrlKey ? accessTokenUrlKey.value : "",
                     clientId: clientIdKey ? clientIdKey.value : "",
                     clientSecret: clientSecretKey ? clientSecretKey.value : "",
                     scope: scopeKey ? scopeKey.value : "",

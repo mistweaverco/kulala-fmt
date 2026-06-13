@@ -42,10 +42,7 @@ const lineSimilarity = (oldLine: string, newLine: string): number => {
   return unchanged / Math.max(oldLine.length, newLine.length, 1);
 };
 
-const pairAddedToRemoved = (
-  removed: string[],
-  added: string[],
-): (string | undefined)[] => {
+const pairAddedToRemoved = (removed: string[], added: string[]): (string | undefined)[] => {
   const addedToRemoved: (string | undefined)[] = added.map(() => undefined);
   const usedAdded = new Set<number>();
 
@@ -167,15 +164,9 @@ export const Diff = (build: string, content: string, options?: DiffOptions) => {
   const filepath = options?.filepath ?? "file";
   const context = options?.context ?? 3;
 
-  const patch = structuredPatch(
-    filepath,
-    filepath,
-    content,
-    build,
-    undefined,
-    undefined,
-    { context },
-  );
+  const patch = structuredPatch(filepath, filepath, content, build, undefined, undefined, {
+    context,
+  });
 
   if (patch.hunks.length === 0) {
     console.log(pc.green("No changes detected!"));
@@ -186,14 +177,8 @@ export const Diff = (build: string, content: string, options?: DiffOptions) => {
   console.log(`+++ ${filepath}`);
 
   for (const hunk of patch.hunks) {
-    const oldRange =
-      hunk.oldLines === 1
-        ? `${hunk.oldStart}`
-        : `${hunk.oldStart},${hunk.oldLines}`;
-    const newRange =
-      hunk.newLines === 1
-        ? `${hunk.newStart}`
-        : `${hunk.newStart},${hunk.newLines}`;
+    const oldRange = hunk.oldLines === 1 ? `${hunk.oldStart}` : `${hunk.oldStart},${hunk.oldLines}`;
+    const newRange = hunk.newLines === 1 ? `${hunk.newStart}` : `${hunk.newStart},${hunk.newLines}`;
 
     console.log(pc.yellow(`@@ -${oldRange} +${newRange} @@`));
     printHunk(hunk.lines);

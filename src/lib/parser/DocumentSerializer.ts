@@ -37,7 +37,7 @@ export function documentToHttp(document: Document): string {
       output += `${block.request.method} ${block.request.url}`;
       if (
         block.request.httpVersion !== "" &&
-        !["WS", "WSS"].includes(block.request.method.toUpperCase())
+        !["WEBSOCKET", "GRPC"].includes(block.request.method.toUpperCase())
       ) {
         output += ` ${block.request.httpVersion}\n`;
       } else {
