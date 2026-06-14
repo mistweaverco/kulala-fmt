@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsx ./scripts/build.ts",
     "lint": "vp lint",
-    "prepare": "vp config && node scripts/build.mjs || true",
+    "prepare": "vp config && tsx ./scripts/build.ts || true",
     "postinstall": "node dist/install-backend.cjs || true"
   },
   "devDependencies": {
