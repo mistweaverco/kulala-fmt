@@ -1,36 +1,36 @@
-import fs from "fs";
-import path from "path";
-import { chmodSync, createWriteStream } from "fs";
-import { pipeline } from "stream/promises";
-import { KULALA_CORE_VERSION } from "../../versions/backend";
+import fs from 'fs';
+import path from 'path';
+import { chmodSync, createWriteStream } from 'fs';
+import { pipeline } from 'stream/promises';
+import { KULALA_CORE_VERSION } from '../../versions/backend';
 
-const BINARY_NAME = "kulala-core";
-const DOWNLOAD_URL = "https://github.com/mistweaverco/kulala-core/releases/download/v%s/%s";
+const BINARY_NAME = 'kulala-core';
+const DOWNLOAD_URL = 'https://github.com/mistweaverco/kulala-core/releases/download/v%s/%s';
 
 function platform(): string {
   const os =
-    process.platform === "darwin" ? "darwin" : process.platform === "win32" ? "windows" : "linux";
+    process.platform === 'darwin' ? 'darwin' : process.platform === 'win32' ? 'windows' : 'linux';
   const arch = process.arch;
   let archName: string = arch;
-  if (arch === "x64") {
-    archName = "x86_64";
-  } else if (arch === "arm64") {
-    archName = os === "darwin" ? "arm64" : "aarch64";
+  if (arch === 'x64') {
+    archName = 'x86_64';
+  } else if (arch === 'arm64') {
+    archName = os === 'darwin' ? 'arm64' : 'aarch64';
   }
   return `${os}-${archName}`;
 }
 
 function getBinDir(): string {
-  return path.join(__dirname, "bin");
+  return path.join(__dirname, 'bin');
 }
 
 function getReleaseBinName(): string {
   const name = `${BINARY_NAME}-${platform()}`;
-  return process.platform === "win32" ? `${name}.exe` : name;
+  return process.platform === 'win32' ? `${name}.exe` : name;
 }
 
 function getBinName(): string {
-  return process.platform === "win32" ? `${BINARY_NAME}.exe` : BINARY_NAME;
+  return process.platform === 'win32' ? `${BINARY_NAME}.exe` : BINARY_NAME;
 }
 
 function getBinPath(): string {
@@ -38,7 +38,7 @@ function getBinPath(): string {
 }
 
 function getVersionPath(): string {
-  return path.join(getBinDir(), "version.txt");
+  return path.join(getBinDir(), 'version.txt');
 }
 
 function binaryExists(): boolean {
@@ -50,7 +50,7 @@ function getInstalledVersion(): string | null {
   if (!fs.existsSync(versionPath)) {
     return null;
   }
-  return fs.readFileSync(versionPath, "utf-8").trim();
+  return fs.readFileSync(versionPath, 'utf-8').trim();
 }
 
 function versionMatches(): boolean {
@@ -59,12 +59,12 @@ function versionMatches(): boolean {
 }
 
 function makeExecutable(filePath: string): void {
-  if (process.platform !== "win32") {
+  if (process.platform !== 'win32') {
     chmodSync(filePath, 0o755);
   }
 }
 
-const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"] as const;
+const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'] as const;
 
 function isInteractiveTerminal(): boolean {
   return process.stderr.isTTY === true;
@@ -79,7 +79,7 @@ type DownloadProgress = {
 function createDownloadProgress(): DownloadProgress {
   let timer: ReturnType<typeof setInterval> | undefined;
   let frame = 0;
-  let message = "";
+  let message = '';
 
   const clearLine = (): void => {
     if (timer) {
@@ -87,7 +87,7 @@ function createDownloadProgress(): DownloadProgress {
       timer = undefined;
     }
     if (isInteractiveTerminal()) {
-      process.stderr.write("\r\x1b[K");
+      process.stderr.write('\r\x1b[K');
     }
   };
 
@@ -144,7 +144,7 @@ export async function installBackend(): Promise<void> {
   fs.mkdirSync(binDir, { recursive: true });
 
   const releaseName = getReleaseBinName();
-  const url = DOWNLOAD_URL.replace("%s", KULALA_CORE_VERSION).replace("%s", releaseName);
+  const url = DOWNLOAD_URL.replace('%s', KULALA_CORE_VERSION).replace('%s', releaseName);
   const downloadPath = path.join(binDir, `${releaseName}.download`);
   const binPath = getBinPath();
   const progress = createDownloadProgress();
@@ -154,7 +154,7 @@ export async function installBackend(): Promise<void> {
     await downloadFile(url, downloadPath);
     makeExecutable(downloadPath);
     fs.renameSync(downloadPath, binPath);
-    fs.writeFileSync(getVersionPath(), KULALA_CORE_VERSION, "utf-8");
+    fs.writeFileSync(getVersionPath(), KULALA_CORE_VERSION, 'utf-8');
     progress.succeed(`Installed kulala-core to ${binPath}`);
   } catch (error) {
     progress.fail();
@@ -185,7 +185,7 @@ export async function tryInstallBackend(): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`Warning: failed to download kulala-core during install: ${message}`);
-    console.error("kulala-fmt will attempt to download it on first use instead.");
+    console.error('kulala-fmt will attempt to download it on first use instead.');
   }
 }
 

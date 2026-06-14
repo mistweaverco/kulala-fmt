@@ -262,8 +262,6 @@ return {
 }
 ```
 
-
-
 [logo]: https://raw.githubusercontent.com/mistweaverco/kulala-fmt/main/logo.svg
 [discord]: https://mistweaverco.com/discord
 [badge-discord]: https://mistweaverco.com/assets/badges/discord.svg

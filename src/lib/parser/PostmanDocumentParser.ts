@@ -1,4 +1,4 @@
-import type { Document, Block } from "./DocumentParser";
+import type { Document, Block } from './DocumentParser';
 
 interface PostmanVariable {
   key: string;
@@ -28,7 +28,7 @@ interface PostmanRequest {
     }>;
   };
   body?: {
-    mode: "raw" | "formdata" | "urlencoded" | "file" | "graphql";
+    mode: 'raw' | 'formdata' | 'urlencoded' | 'file' | 'graphql';
     raw?: string;
     options?: {
       raw?: {
@@ -78,7 +78,7 @@ export class PostmanDocumentParser {
       request: {
         method: item.request.method,
         url: item.request?.url?.raw,
-        httpVersion: "HTTP/1.1",
+        httpVersion: 'HTTP/1.1',
         headers: [],
         body: null,
       },
@@ -98,8 +98,8 @@ export class PostmanDocumentParser {
     // Add name as metadata
     if (item.name) {
       block.metadata.push({
-        key: "name",
-        value: item.name.replace(/\s+/g, "_").toUpperCase(),
+        key: 'name',
+        value: item.name.replace(/\s+/g, '_').toUpperCase(),
       });
     }
 
@@ -118,15 +118,15 @@ export class PostmanDocumentParser {
     }
 
     // Handle request body
-    if (item.request.body?.mode === "raw" && item.request.body.raw) {
+    if (item.request.body?.mode === 'raw' && item.request.body.raw) {
       if (block.request) {
         block.request.body = item.request.body.raw;
 
         // Add Content-Type header if not present
-        const contentType = item.request.body.options?.raw?.language || "text/plain";
-        if (!block.request.headers.some((h) => h.key.toLowerCase() === "content-type")) {
+        const contentType = item.request.body.options?.raw?.language || 'text/plain';
+        if (!block.request.headers.some((h) => h.key.toLowerCase() === 'content-type')) {
           block.request.headers.push({
-            key: "Content-Type",
+            key: 'Content-Type',
             value: this.getContentType(contentType),
           });
         }
@@ -138,21 +138,21 @@ export class PostmanDocumentParser {
 
   private getContentType(language: string): string {
     switch (language.toLowerCase()) {
-      case "json":
-        return "application/json";
-      case "xml":
-        return "application/xml";
-      case "javascript":
-        return "application/javascript";
+      case 'json':
+        return 'application/json';
+      case 'xml':
+        return 'application/xml';
+      case 'javascript':
+        return 'application/javascript';
       default:
-        return "text/plain";
+        return 'text/plain';
     }
   }
 
   private processItems(
     items: (PostmanItem | PostmanItemGroup)[],
     document: Document,
-    parentPath: string = "",
+    parentPath: string = '',
   ): void {
     for (const item of items) {
       if (this.isItemGroup(item)) {
@@ -181,7 +181,7 @@ export class PostmanDocumentParser {
   }
 
   private isItemGroup(item: PostmanItem | PostmanItemGroup): item is PostmanItemGroup {
-    return "item" in item;
+    return 'item' in item;
   }
 
   parse(collection: PostmanCollection): ParseResult {

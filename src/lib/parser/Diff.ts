@@ -1,5 +1,5 @@
-import { diffChars, structuredPatch } from "diff";
-import pc from "picocolors";
+import { diffChars, structuredPatch } from 'diff';
+import pc from 'picocolors';
 
 export type DiffOptions = {
   filepath?: string;
@@ -9,30 +9,32 @@ export type DiffOptions = {
 const SIMILARITY_THRESHOLD = 0.6;
 
 const colorRemoved = (text: string): string =>
+  // eslint-disable-next-line typescript-eslint/no-misused-spread
   [...text]
     .map((ch) => {
-      if (ch === " ") {
-        return pc.bgRed(pc.white(" "));
+      if (ch === ' ') {
+        return pc.bgRed(pc.white(' '));
       }
-      if (ch === "\t") {
-        return pc.bgRed("→");
+      if (ch === '\t') {
+        return pc.bgRed('→');
       }
       return pc.red(ch);
     })
-    .join("");
+    .join('');
 
 const colorAdded = (text: string): string =>
+  // eslint-disable-next-line typescript-eslint/no-misused-spread
   [...text]
     .map((ch) => {
-      if (ch === " ") {
-        return pc.bgGreen(pc.white(" "));
+      if (ch === ' ') {
+        return pc.bgGreen(pc.white(' '));
       }
-      if (ch === "\t") {
-        return pc.bgGreen("→");
+      if (ch === '\t') {
+        return pc.bgGreen('→');
       }
       return pc.green(ch);
     })
-    .join("");
+    .join('');
 
 const lineSimilarity = (oldLine: string, newLine: string): number => {
   const parts = diffChars(oldLine, newLine);
@@ -78,7 +80,7 @@ const renderInlineDiff = (oldLine: string, newLine: string): string => {
   }
 
   const parts = diffChars(oldLine, newLine);
-  let result = "";
+  let result = '';
 
   for (const part of parts) {
     if (part.removed) {
@@ -124,26 +126,26 @@ const printHunk = (lines: string[]): void => {
   while (i < lines.length) {
     const line = lines[i];
 
-    if (line === "\\ No newline at end of file") {
+    if (line === '\\ No newline at end of file') {
       i++;
       continue;
     }
 
-    if (line.startsWith(" ")) {
+    if (line.startsWith(' ')) {
       console.log(` ${dimUnchanged(line.slice(1))}`);
       i++;
       continue;
     }
 
-    if (line.startsWith("-")) {
+    if (line.startsWith('-')) {
       const removed: string[] = [];
-      while (i < lines.length && lines[i].startsWith("-")) {
+      while (i < lines.length && lines[i].startsWith('-')) {
         removed.push(lines[i].slice(1));
         i++;
       }
 
       const added: string[] = [];
-      while (i < lines.length && lines[i].startsWith("+")) {
+      while (i < lines.length && lines[i].startsWith('+')) {
         added.push(lines[i].slice(1));
         i++;
       }
@@ -152,7 +154,7 @@ const printHunk = (lines: string[]): void => {
       continue;
     }
 
-    if (line.startsWith("+")) {
+    if (line.startsWith('+')) {
       printOutcomeLine(line.slice(1));
     }
 
@@ -161,7 +163,7 @@ const printHunk = (lines: string[]): void => {
 };
 
 export const Diff = (build: string, content: string, options?: DiffOptions) => {
-  const filepath = options?.filepath ?? "file";
+  const filepath = options?.filepath ?? 'file';
   const context = options?.context ?? 3;
 
   const patch = structuredPatch(filepath, filepath, content, build, undefined, undefined, {
@@ -169,7 +171,7 @@ export const Diff = (build: string, content: string, options?: DiffOptions) => {
   });
 
   if (patch.hunks.length === 0) {
-    console.log(pc.green("No changes detected!"));
+    console.log(pc.green('No changes detected!'));
     return;
   }
 

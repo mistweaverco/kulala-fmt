@@ -1,10 +1,10 @@
-import fs from "fs";
-import path from "path";
-import yaml from "js-yaml";
-import chalk from "chalk";
-import readline from "readline";
+import fs from 'fs';
+import path from 'path';
+import yaml from 'js-yaml';
+import chalk from 'chalk';
+import readline from 'readline';
 
-const CONFIG_FILENAME = "kulala-fmt.yaml";
+const CONFIG_FILENAME = 'kulala-fmt.yaml';
 
 export interface Config {
   defaults: {
@@ -22,8 +22,8 @@ export interface Config {
 
 const DEFAULT_CONFIG: Config = {
   defaults: {
-    http_method: "GET",
-    http_version: "HTTP/1.1",
+    http_method: 'GET',
+    http_version: 'HTTP/1.1',
   },
   body: {
     format: {
@@ -44,13 +44,13 @@ const init = (): void => {
       output: process.stdout,
     });
     rl.question(`Do you want to overwrite the file? (y/N) `, (answer: string) => {
-      if (answer.toLowerCase() === "y") {
+      if (answer.toLowerCase() === 'y') {
         fs.writeFileSync(file, configHeader + yaml.dump(DEFAULT_CONFIG));
         console.log(chalk.green(`🦄 Config file written: ${file}`));
-      } else if (answer.toLowerCase() === "n") {
-        console.log(chalk.yellow("🦄 Exiting..."));
+      } else if (answer.toLowerCase() === 'n') {
+        console.log(chalk.yellow('🦄 Exiting...'));
       } else {
-        console.log(chalk.red("🦄 Invalid input"));
+        console.log(chalk.red('🦄 Invalid input'));
       }
       rl.close();
     });
@@ -65,7 +65,7 @@ const parse = (): Config => {
   if (!fs.existsSync(file)) {
     return DEFAULT_CONFIG;
   }
-  const content = fs.readFileSync(file, "utf8");
+  const content = fs.readFileSync(file, 'utf8');
   const json = yaml.load(content) as Partial<Config>;
   return {
     defaults: { ...DEFAULT_CONFIG.defaults, ...json.defaults },

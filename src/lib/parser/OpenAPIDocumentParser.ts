@@ -1,4 +1,4 @@
-import type { Document, Block, Header } from "./DocumentParser";
+import type { Document, Block, Header } from './DocumentParser';
 
 interface OpenAPIServer {
   url: string;
@@ -15,7 +15,7 @@ interface OpenAPIServer {
 
 interface OpenAPIParameter {
   name: string;
-  in: "query" | "header" | "path" | "cookie";
+  in: 'query' | 'header' | 'path' | 'cookie';
   description?: string;
   required?: boolean;
   deprecated?: boolean;
@@ -24,7 +24,7 @@ interface OpenAPIParameter {
 }
 
 interface OpenAPISchema {
-  type: "string" | "number" | "integer" | "boolean" | "array" | "object";
+  type: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object';
   format?: string;
   properties?: Record<string, OpenAPISchema>;
   items?: OpenAPISchema;
@@ -96,7 +96,7 @@ export interface OpenAPISpec {
     schemas?: Record<string, OpenAPISchema>;
     parameters?: Record<string, OpenAPIParameter>;
     requestBodies?: Record<string, OpenAPIRequestBody>;
-    responses?: Record<string, OpenAPIOperation["responses"]>;
+    responses?: Record<string, OpenAPIOperation['responses']>;
   };
 }
 
@@ -120,7 +120,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
       request: {
         method: method.toUpperCase(),
         url: path,
-        httpVersion: "HTTP/1.1",
+        httpVersion: 'HTTP/1.1',
         headers: [],
         body: null,
       },
@@ -133,24 +133,24 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     if (operation.summary) {
       block.comments.push(
         operation.summary
-          .split("\n")
+          .split('\n')
           .map((l) => `# ${l}`)
-          .join("\n") + "\n",
+          .join('\n') + '\n',
       );
     }
     if (operation.description) {
       block.comments.push(
         operation.description
-          .split("\n")
+          .split('\n')
           .map((l) => `# ${l}`)
-          .join("\n") + "\n",
+          .join('\n') + '\n',
       );
     }
 
     // Add operationId as metadata
     if (operation.operationId) {
       block.metadata.push({
-        key: "name",
+        key: 'name',
         value: operation.operationId,
       });
     }
@@ -163,7 +163,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
       if (block.request) {
         // TypeScript guard
         block.request.headers.push({
-          key: "Content-Type",
+          key: 'Content-Type',
           value: contentType,
         });
 
@@ -180,7 +180,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     if (operation.parameters && block.request) {
       // TypeScript guard
       for (const param of operation.parameters) {
-        if (param.in === "header") {
+        if (param.in === 'header') {
           const header: Header = {
             key: param.name,
             value: param.example?.toString() || `{{${param.name}}}`,
@@ -203,18 +203,18 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     return JSON.stringify(example, null, 2);
   }
 
-  private getDefaultValueForType(type: OpenAPISchema["type"]): unknown {
+  private getDefaultValueForType(type: OpenAPISchema['type']): unknown {
     switch (type) {
-      case "string":
-        return "string";
-      case "number":
-      case "integer":
+      case 'string':
+        return 'string';
+      case 'number':
+      case 'integer':
         return 0;
-      case "boolean":
+      case 'boolean':
         return false;
-      case "array":
+      case 'array':
         return [];
-      case "object":
+      case 'object':
         return {};
       default:
         return null;
@@ -223,7 +223,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
 
   private extractServerIdentifier(server: OpenAPIServer): string {
     // Remove protocol prefix (http:// or https://)
-    let identifier = server.url.replace(/^https?:\/\//, "");
+    let identifier = server.url.replace(/^https?:\/\//, '');
 
     // Replace variable patterns with their default values or placeholder
     if (server.variables) {
@@ -233,7 +233,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     }
 
     // Remove port and path for cleaner identifier
-    identifier = identifier.split(":")[0].split("/")[0];
+    identifier = identifier.split(':')[0].split('/')[0];
 
     return identifier;
   }
@@ -243,7 +243,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     if (!openAPISpec.servers || openAPISpec.servers.length === 0) {
       return {
         documents: [this.createDocument(openAPISpec)],
-        serverUrls: ["default"],
+        serverUrls: ['default'],
       };
     }
 
@@ -267,7 +267,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     }
 
     // Remove leading slash from path
-    const cleanPath = path.replace(/^\//, "");
+    const cleanPath = path.replace(/^\//, '');
 
     let url = server.url;
 
@@ -279,7 +279,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     }
 
     // Replace the entire server URL with baseUrl variable
-    url = `{{baseUrl${serverIndex || ""}}}/${cleanPath}`;
+    url = `{{baseUrl${serverIndex || ''}}}/${cleanPath}`;
 
     return url;
   }
@@ -296,7 +296,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
 
     // Add server URL as a variable if it exists
     if (server) {
-      let serverUrl = server.url.replace(/\/$/, ""); // Remove trailing slash
+      let serverUrl = server.url.replace(/\/$/, ''); // Remove trailing slash
 
       // Replace server variables with double curly braces in the URL
       if (server.variables) {
@@ -306,7 +306,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
       }
 
       document.variables.push({
-        key: `baseUrl${serverIndex || ""}`,
+        key: `baseUrl${serverIndex || ''}`,
         value: serverUrl,
       });
 
@@ -324,7 +324,7 @@ export class OpenAPIDocumentParser implements OpenAPIParser {
     // Parse paths into blocks
     for (const [path, pathItem] of Object.entries(openAPISpec.paths)) {
       for (const [method, operation] of Object.entries(pathItem)) {
-        if (["get", "post", "put", "delete", "patch"].includes(method)) {
+        if (['get', 'post', 'put', 'delete', 'patch'].includes(method)) {
           const block = this.buildRequestBlock(
             this.buildFullUrl(path, server, serverIndex),
             method,

@@ -13,7 +13,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "node scripts/build.mjs",
+    "build": "tsx ./scripts/build.ts",
     "lint": "vp lint",
     "prepare": "vp config && node scripts/build.mjs || true",
     "postinstall": "node dist/install-backend.cjs || true"
@@ -26,11 +26,14 @@
     "commander": "15.0.0",
     "conventional-changelog": "7.2.0",
     "diff": "9.0.0",
+    "eslint-plugin-prettier": "5.5.6",
     "globals": "17.6.0",
     "js-yaml": "4.2.0",
     "lodash": "4.18.1",
     "ohm-js": "17.5.0",
     "picocolors": "1.1.1",
+    "prettier": "3.8.4",
+    "tsx": "4.22.4",
     "typescript": "5.9.3",
     "vite-plus": "catalog:"
   },

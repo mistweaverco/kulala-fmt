@@ -1,6 +1,6 @@
-import type { Document } from "./DocumentParser";
-import { documentToHttp } from "./DocumentSerializer";
-import { kulalaCore } from "../kulala-core";
+import type { Document } from './DocumentParser';
+import { documentToHttp } from './DocumentSerializer';
+import { kulalaCore } from '../kulala-core';
 
 const build = async (
   document: Document,

@@ -1,6 +1,6 @@
-import { spawnSync } from "child_process";
-import { downloader } from "../downloader";
-import { configparser } from "../configparser";
+import { spawnSync } from 'child_process';
+import { downloader } from '../downloader';
+import { configparser } from '../configparser';
 
 export type FormatOptions = {
   formatBody?: boolean;
@@ -31,12 +31,12 @@ async function executablePath(): Promise<string> {
 function invoke(payload: Record<string, unknown>): unknown {
   const exe = cachedExecutable;
   if (!exe) {
-    throw new Error("kulala-core executable not resolved");
+    throw new Error('kulala-core executable not resolved');
   }
 
   const result = spawnSync(exe, [], {
     input: `${JSON.stringify(payload)}\n`,
-    encoding: "utf-8",
+    encoding: 'utf-8',
     maxBuffer: 50 * 1024 * 1024,
   });
 
@@ -46,13 +46,13 @@ function invoke(payload: Record<string, unknown>): unknown {
 
   if (result.status !== 0) {
     throw new Error(
-      result.stderr?.trim() || `kulala-core exited with code ${result.status ?? "unknown"}`,
+      result.stderr?.trim() || `kulala-core exited with code ${result.status ?? 'unknown'}`,
     );
   }
 
   const stdout = result.stdout?.trim();
   if (!stdout) {
-    throw new Error("kulala-core returned empty output");
+    throw new Error('kulala-core returned empty output');
   }
 
   return JSON.parse(stdout);
@@ -63,7 +63,7 @@ export async function formatHttp(content: string, options: FormatOptions = {}): 
   const config = configparser.parse();
 
   const response = invoke({
-    action: "format",
+    action: 'format',
     content,
     filepath: options.filepath,
     formatBody: options.formatBody ?? true,
