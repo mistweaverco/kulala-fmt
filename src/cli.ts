@@ -33,10 +33,12 @@ program
 
 program
   .command('convert')
-  .description('Convert files to .http format')
+  .description('Convert between HTTP and other API formats')
   .argument('<files...>', 'files to include')
-  .option('--from <value>', 'source format', 'openapi')
-  .option('--to <value>', 'destination format', 'http')
+  .option('--from <value>', 'source format (openapi, postman, bruno, http)', 'openapi')
+  .option('--to <value>', 'destination format (http, postman)', 'http')
+  .option('--env <path>', 'environment file for variable injection (.env or http-client.env.json)')
+  .option('-o, --output <path>', 'output file path')
   .action(async (files, options) => {
     await convert(options, files);
   });

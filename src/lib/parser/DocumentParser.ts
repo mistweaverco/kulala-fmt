@@ -39,6 +39,7 @@ export interface Block {
   requestSeparator: BlockRequestSeparator;
   metadata: Metadata[];
   comments: string[];
+  variables?: Variable[];
   request: Request | null;
   preRequestScripts: PreRequestScript[];
   postRequestScripts: PostRequestScript[];

@@ -33,6 +33,10 @@ export function documentToHttp(document: Document): string {
       output += `# @${metadata.key} ${metadata.value}\n`;
     }
 
+    for (const variable of block.variables ?? []) {
+      output += `@${variable.key} = ${variable.value}\n`;
+    }
+
     if (block.request) {
       output += `${block.request.method} ${block.request.url}`;
       if (

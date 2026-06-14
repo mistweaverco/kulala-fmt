@@ -19,6 +19,19 @@ interface EnvironmentInfo {
   vars: Record<string, string>;
 }
 
+interface BrunoParam {
+  name: string;
+  value: string;
+  enabled?: boolean;
+  type?: 'query' | 'path';
+}
+
+interface BrunoVar {
+  name: string;
+  value: string;
+  local?: boolean;
+}
+
 interface BrunoRequest {
   meta?: {
     name?: string;
@@ -29,6 +42,11 @@ interface BrunoRequest {
     url?: string;
   };
   headers?: BrunoHeader[];
+  params?: BrunoParam[];
+  vars?: {
+    req?: BrunoVar[];
+    res?: BrunoVar[];
+  };
   body?: {
     json?: string;
     graphql?: {
@@ -42,7 +60,10 @@ interface BrunoRequest {
       type?: string;
     }>;
   };
-  'script:pre-request'?: string;
+  script?: {
+    req?: string;
+    res?: string;
+  };
   tests?: string;
 }
 
@@ -81,7 +102,7 @@ export class BrunoDocumentParser {
 
       if (isInVarsBlock && environment.vars) {
         const [key, ...valueParts] = trimmedLine.split(':').map((part) => part.trim());
-        const value = valueParts.join(':').replace(/^"(.*)"$/, '$1'); // Remove quotes if present
+        const value = valueParts.join(':').replace(/^"(.*)"$/, '$1');
         if (key && value) {
           environment.vars[key] = value;
         }
@@ -91,7 +112,55 @@ export class BrunoDocumentParser {
     return environment;
   }
 
-  private buildRequestBlock(bruRequest: BrunoRequest, folderPath: string): Block {
+  private applyParams(url: string, params: BrunoParam[]): string {
+    let result = url;
+
+    for (const param of params.filter((p) => p.enabled !== false)) {
+      if (param.type === 'path') {
+        result = result
+          .replace(`:${param.name}`, param.value)
+          .replace(`{${param.name}}`, param.value);
+      }
+    }
+
+    const queryParams = params.filter((p) => p.type === 'query' && p.enabled !== false);
+    if (queryParams.length > 0) {
+      const queryParts = queryParams.map((p) => {
+        const value = p.value.match(/^{{.*}}$/) ? p.value : encodeURIComponent(p.value);
+        return `${encodeURIComponent(p.name)}=${value}`;
+      });
+      const separator = result.includes('?') ? '&' : '?';
+      result += separator + queryParts.join('&');
+    }
+
+    return result;
+  }
+
+  private applyVariables(block: Block, document: Document, vars: BrunoVar[] | undefined): void {
+    if (!vars?.length) return;
+
+    for (const variable of vars) {
+      const entry: Variable = {
+        key: variable.name,
+        value: variable.value,
+      };
+
+      if (variable.local) {
+        if (!block.variables) {
+          block.variables = [];
+        }
+        block.variables.push(entry);
+      } else if (!document.variables.some((v) => v.key === entry.key)) {
+        document.variables.push(entry);
+      }
+    }
+  }
+
+  private buildRequestBlock(
+    bruRequest: BrunoRequest,
+    folderPath: string,
+    document: Document,
+  ): Block {
     const request = {
       method: (bruRequest.http?.method || 'POST').toUpperCase(),
       url: bruRequest.http?.url || bruRequest.meta?.url || '',
@@ -99,6 +168,10 @@ export class BrunoDocumentParser {
       headers: [] as Header[],
       body: null as string | null,
     };
+
+    if (bruRequest.params?.length) {
+      request.url = this.applyParams(request.url, bruRequest.params);
+    }
 
     const block: Block = {
       requestSeparator: {
@@ -112,7 +185,6 @@ export class BrunoDocumentParser {
       responseRedirect: null,
     };
 
-    // Add folder path and name as comments
     if (folderPath) {
       block.comments.push(`# Folder: ${folderPath}\n`);
     }
@@ -124,7 +196,8 @@ export class BrunoDocumentParser {
       });
     }
 
-    // Handle headers - they come as array of { name, value, enabled }
+    this.applyVariables(block, document, bruRequest.vars?.req);
+
     if (Array.isArray(bruRequest.headers)) {
       bruRequest.headers
         .filter((header) => header.enabled !== false)
@@ -136,7 +209,6 @@ export class BrunoDocumentParser {
         });
     }
 
-    // Handle GraphQL specific headers and body
     if (bruRequest.body?.graphql) {
       request.headers.push(
         { key: 'Accept', value: 'application/json' },
@@ -166,18 +238,13 @@ export class BrunoDocumentParser {
       const formEntries = bruRequest.body.formUrlEncoded;
       const formParts: string[] = [];
 
-      // Log the form data for debugging
-      console.log('Form data:', formEntries);
-
       if (Array.isArray(formEntries)) {
         formEntries
           .filter((entry) => entry.enabled !== false)
           .forEach((entry) => {
             if (entry.name && entry.value !== undefined && entry.value !== null) {
               const value = String(entry.value);
-              // Don't encode {{variables}}
               const encodedValue = value.match(/^{{.*}}$/) ? value : encodeURIComponent(value);
-
               formParts.push(`${encodeURIComponent(entry.name)}=${encodedValue}`);
             }
           });
@@ -210,10 +277,9 @@ export class BrunoDocumentParser {
       });
     }
 
-    // Handle scripts
-    if (bruRequest['script:pre-request']) {
+    if (bruRequest.script?.req) {
       block.preRequestScripts.push({
-        script: bruRequest['script:pre-request'].trim(),
+        script: bruRequest.script.req.trim(),
         inline: true,
       });
     }
@@ -228,38 +294,28 @@ export class BrunoDocumentParser {
     return block;
   }
 
-  private processDirectory(dirPath: string): Document {
-    const document: Document = {
-      variables: [],
-      blocks: [],
-    };
-
+  private processDirectory(dirPath: string, document: Document): void {
     const items = readdirSync(dirPath);
 
     for (const item of items) {
       const fullPath = join(dirPath, item);
       const stat = statSync(fullPath);
 
-      // Skip the environments directory completely
       if (item === 'environments') {
         continue;
       }
 
       if (stat.isDirectory()) {
-        const subDocument = this.processDirectory(fullPath);
-        document.blocks.push(...subDocument.blocks);
-        document.variables.push(...subDocument.variables);
+        this.processDirectory(fullPath, document);
       } else if (item.endsWith('.bru')) {
         const content = readFileSync(fullPath, 'utf-8');
         const bruRequest = BrunoToJSONParser.parse(content) as BrunoRequest;
         const relativePath = relative(dirPath, fullPath).replace('.bru', '');
 
-        const block = this.buildRequestBlock(bruRequest, relativePath);
+        const block = this.buildRequestBlock(bruRequest, relativePath, document);
         document.blocks.push(block);
       }
     }
-
-    return document;
   }
 
   private getEnvironments(dirPath: string): EnvironmentInfo[] {
@@ -296,29 +352,29 @@ export class BrunoDocumentParser {
   }
 
   parse(collectionPath: string): ParseResult {
-    // Read collection info first
     collectionInfo = this.readCollectionInfo(collectionPath);
     const environments = this.getEnvironments(collectionPath);
 
-    // If no environments found, create a default document
     if (environments.length === 0) {
+      const document: Document = { variables: [], blocks: [] };
+      this.processDirectory(collectionPath, document);
       return {
-        documents: [this.processDirectory(collectionPath)],
+        documents: [document],
         environmentNames: ['default'],
         collectionName: collectionInfo?.name || 'bruno-collection',
       };
     }
 
-    // Create a document for each environment
     const documents = environments.map((env) => {
-      const doc = this.processDirectory(collectionPath);
-      // Add environment variables to the document
-      doc.variables = Object.entries(env.vars).map(
-        ([key, value]): Variable => ({
-          key,
-          value,
-        }),
-      );
+      const doc: Document = { variables: [], blocks: [] };
+      this.processDirectory(collectionPath, doc);
+
+      for (const [key, value] of Object.entries(env.vars)) {
+        if (!doc.variables.some((v) => v.key === key)) {
+          doc.variables.push({ key, value });
+        }
+      }
+
       return doc;
     });
 
