@@ -1,6 +1,9 @@
 import { spawnSync } from 'child_process';
 import { downloader } from '../downloader';
 import { configparser } from '../configparser';
+import type { KulalaParsedDocument } from './types';
+
+export type { KulalaParsedDocument } from './types';
 
 export type FormatOptions = {
   formatBody?: boolean;
@@ -78,6 +81,17 @@ export async function formatHttp(content: string, options: FormatOptions = {}): 
   return response.formatted;
 }
 
+export async function parseHttp(content: string, filepath?: string): Promise<KulalaParsedDocument> {
+  await executablePath();
+
+  return invoke({
+    action: 'parse',
+    content,
+    filepath,
+  }) as KulalaParsedDocument;
+}
+
 export const kulalaCore = {
   formatHttp,
+  parseHttp,
 };

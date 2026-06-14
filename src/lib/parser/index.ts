@@ -1,11 +1,17 @@
 import fs from 'fs';
+import path from 'path';
 import chalk from 'chalk';
 import yaml from 'js-yaml';
 import { fileWalker } from './../filewalker';
 import { DocumentBuilder } from './DocumentBuilder';
 import { Diff } from './Diff';
-import { OpenAPIDocumentParser, OpenAPISpec } from './OpenAPIDocumentParser';
+import { OpenAPIDocumentParser, OpenAPISpec, normalizeSpec } from './OpenAPIDocumentParser';
 import { PostmanDocumentParser } from './PostmanDocumentParser';
+import {
+  buildPostmanCollection,
+  loadEnvVariables,
+  resolveCollectionName,
+} from './PostmanDocumentBuilder';
 import { BrunoDocumentParser } from './BrunoDocumentParser';
 import { kulalaCore } from '../kulala-core';
 
@@ -14,10 +20,13 @@ const PostmanParser = new PostmanDocumentParser();
 const BrunoParser = new BrunoDocumentParser();
 
 const getOpenAPISpecAsJSON = (filepath: string): OpenAPISpec => {
+  let raw: unknown;
   if (filepath.endsWith('.yaml') || filepath.endsWith('.yml')) {
-    return yaml.load(fs.readFileSync(filepath, 'utf-8')) as OpenAPISpec;
+    raw = yaml.load(fs.readFileSync(filepath, 'utf-8'));
+  } else {
+    raw = JSON.parse(fs.readFileSync(filepath, 'utf-8'));
   }
-  return JSON.parse(fs.readFileSync(filepath, 'utf-8')) as OpenAPISpec;
+  return normalizeSpec(raw);
 };
 
 const isAlreadyPretty = async (
@@ -223,13 +232,95 @@ const convertFromBruno = async (files: string[]): Promise<void> => {
   }
 };
 
+const collectHttpFiles = (inputs: string[]): string[] => {
+  const files = new Set<string>();
+
+  for (const input of inputs) {
+    const resolved = path.resolve(input);
+    if (!fs.existsSync(resolved)) {
+      console.log(chalk.red(`File not found: ${input}`));
+      process.exit(1);
+    }
+
+    const stat = fs.statSync(resolved);
+    if (stat.isDirectory()) {
+      for (const file of fileWalker(resolved, ['.http', '.rest'])) {
+        files.add(file);
+      }
+    } else if (resolved.endsWith('.http') || resolved.endsWith('.rest')) {
+      files.add(resolved);
+    } else {
+      console.log(chalk.red(`Unsupported file type: ${input}`));
+      process.exit(1);
+    }
+  }
+
+  return [...files].sort();
+};
+
+const convertToPostman = async (
+  files: string[],
+  options: { env?: string; output?: string },
+): Promise<void> => {
+  const httpFiles = collectHttpFiles(files);
+  if (httpFiles.length === 0) {
+    console.log(chalk.red('No .http or .rest files found.'));
+    process.exit(1);
+  }
+
+  const baseDir = httpFiles.length === 1 ? path.dirname(httpFiles[0]!) : commonBaseDir(httpFiles);
+  const extraVariables = options.env ? loadEnvVariables(options.env) : {};
+
+  const documents = await Promise.all(
+    httpFiles.map(async (file) => {
+      const content = fs.readFileSync(file, 'utf-8');
+      const doc = await kulalaCore.parseHttp(content, file);
+      return {
+        doc,
+        relativePath: path.relative(baseDir, file),
+      };
+    }),
+  );
+
+  const collectionName = resolveCollectionName(httpFiles);
+  const collection = buildPostmanCollection(documents, collectionName, extraVariables);
+
+  const outputFilename =
+    options.output ??
+    (httpFiles.length === 1
+      ? httpFiles[0]!.replace(/\.(http|rest)$/i, '.postman_collection.json')
+      : `${collectionName}.postman_collection.json`);
+
+  fs.writeFileSync(outputFilename, JSON.stringify(collection, null, 2), 'utf-8');
+  console.log(chalk.green(`Converted ${httpFiles.length} HTTP file(s) --> ${outputFilename}`));
+};
+
+const commonBaseDir = (files: string[]): string => {
+  if (files.length === 0) return process.cwd();
+
+  const parts = files.map((file) => path.resolve(file).split(path.sep));
+  const shortest = Math.min(...parts.map((p) => p.length));
+  const common: string[] = [];
+
+  for (let i = 0; i < shortest; i++) {
+    const segment = parts[0]![i];
+    if (parts.every((p) => p[i] === segment)) {
+      common.push(segment!);
+    } else {
+      break;
+    }
+  }
+
+  return common.join(path.sep) || path.dirname(files[0]!);
+};
+
 const invalidFormat = (t: 'src' | 'dest', format: string): void => {
   console.log(chalk.red(`Invalid ${t} format ${format}.`));
   process.exit(1);
 };
 
 export const convert = async (
-  options: { from: string; to: string },
+  options: { from: string; to: string; env?: string; output?: string },
   files: string[],
 ): Promise<void> => {
   switch (options.from) {
@@ -255,6 +346,15 @@ export const convert = async (
       switch (options.to) {
         case 'http':
           await convertFromBruno(files);
+          break;
+        default:
+          invalidFormat('dest', options.to);
+      }
+      break;
+    case 'http':
+      switch (options.to) {
+        case 'postman':
+          await convertToPostman(files, options);
           break;
         default:
           invalidFormat('dest', options.to);

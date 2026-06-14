@@ -55,7 +55,7 @@ export KULALA_CORE_PATH=/path/to/kulala-core
 
 kulala-fmt can `fix`(alias `format`) and `check` `.http` and `.rest` files.
 
-It can also `convert` OpenAPI `.yaml`, `.yml` or `.json` files to `.http` files.
+It can also `convert` between `.http` files and other API formats (OpenAPI, Postman, Bruno).
 
 ### Format / Fix
 
@@ -130,12 +130,17 @@ cat SOMEFILE.http | kulala-fmt check --stdin
 
 ### Convert
 
-#### OpenAPI to `.http`
+kulala-fmt supports bidirectional conversion between `.http` files and several API formats.
+Use `--from` and `--to` to select the source and destination format (defaults: `openapi` → `http`).
 
-Convert OpenAPI `.yaml`, `.yml` or `.json` files to `.http` files:
+#### OpenAPI / Swagger to `.http`
+
+Convert OpenAPI 3.x or Swagger 2.0 `.yaml`, `.yml` or `.json` files to `.http` files.
+Query, path, header, and request body parameters are included; Swagger 2.0 `definitions` and `in: body` parameters are supported.
 
 ```sh
 kulala-fmt convert --from openapi openapi.yaml
+kulala-fmt convert swagger.json
 ```
 
 #### Postman collection to `.http`
@@ -146,9 +151,28 @@ Convert Postman collection `.json` files to `.http` files:
 kulala-fmt convert --from postman postman.json
 ```
 
+#### `.http` to Postman collection
+
+Convert one or more `.http` / `.rest` files (or a directory) to a Postman Collection v2.1 `.json` file.
+Directory structure is preserved as Postman folders.
+
+```sh
+kulala-fmt convert --from http --to postman requests.http
+kulala-fmt convert --from http --to postman ./api/
+kulala-fmt convert --from http --to postman *.http -o my-collection.json
+```
+
+Inject variables from an environment file:
+
+```sh
+kulala-fmt convert --from http --to postman requests.http --env .env
+kulala-fmt convert --from http --to postman requests.http --env http-client.env.json
+```
+
 #### Bruno to `.http`
 
-Convert Bruno collections to `.http` files:
+Convert Bruno collections to `.http` files.
+Request variables (`vars:pre-request`), environment variables, query/path params, and scripts are preserved.
 
 ```sh
 kulala-fmt convert --from bruno path/to/bruno/collection
