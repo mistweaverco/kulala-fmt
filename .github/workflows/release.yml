@@ -5,6 +5,11 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   release:
     runs-on: ubuntu-latest
