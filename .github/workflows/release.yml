@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Publish
-        run: pnpm publish
+        run: npm publish --access public
       - name: Make release
         run: |
           gh release create v$VERSION -t "v$VERSION" --generate-notes
