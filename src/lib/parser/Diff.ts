@@ -44,9 +44,15 @@ const lineSimilarity = (oldLine: string, newLine: string): number => {
   return unchanged / Math.max(oldLine.length, newLine.length, 1);
 };
 
-const pairAddedToRemoved = (removed: string[], added: string[]): (string | undefined)[] => {
+type AddedRemovedPairing = {
+  addedToRemoved: (string | undefined)[];
+  usedRemoved: Set<number>;
+};
+
+const pairAddedToRemoved = (removed: string[], added: string[]): AddedRemovedPairing => {
   const addedToRemoved: (string | undefined)[] = added.map(() => undefined);
   const usedAdded = new Set<number>();
+  const usedRemoved = new Set<number>();
 
   for (let r = 0; r < removed.length; r++) {
     let bestIndex = -1;
@@ -66,13 +72,33 @@ const pairAddedToRemoved = (removed: string[], added: string[]): (string | undef
     if (bestIndex >= 0) {
       addedToRemoved[bestIndex] = removed[r];
       usedAdded.add(bestIndex);
+      usedRemoved.add(r);
     }
   }
 
-  return addedToRemoved;
+  return { addedToRemoved, usedRemoved };
 };
 
 const dimUnchanged = (text: string): string => pc.gray(text);
+
+type DiffSign = ' ' | '+' | '-' | '~';
+
+const formatSign = (sign: DiffSign): string => {
+  if (sign === '+') {
+    return pc.green('+');
+  }
+  if (sign === '-') {
+    return pc.red('-');
+  }
+  if (sign === '~') {
+    return pc.yellow('~');
+  }
+  return ' ';
+};
+
+const printDiffLine = (sign: DiffSign, content: string): void => {
+  console.log(`${formatSign(sign)} ${content}`);
+};
 
 const renderInlineDiff = (oldLine: string, newLine: string): string => {
   if (oldLine === newLine) {
@@ -95,15 +121,20 @@ const renderInlineDiff = (oldLine: string, newLine: string): string => {
   return result;
 };
 
-const renderOutcomeLine = (newLine: string, oldLine?: string): string => {
+const printOutcomeLine = (line: string, oldLine?: string): void => {
   if (oldLine === undefined) {
-    return colorAdded(newLine);
+    printDiffLine('+', colorAdded(line));
+    return;
   }
-  return renderInlineDiff(oldLine, newLine);
+  if (oldLine !== line) {
+    printDiffLine('~', renderInlineDiff(oldLine, line));
+    return;
+  }
+  printDiffLine(' ', dimUnchanged(line));
 };
 
-const printOutcomeLine = (line: string, oldLine?: string): void => {
-  console.log(` ${renderOutcomeLine(line, oldLine)}`);
+const printRemovedLine = (line: string): void => {
+  printDiffLine('-', colorRemoved(line));
 };
 
 const printChangeBlock = (removed: string[], added: string[]): void => {
@@ -114,9 +145,14 @@ const printChangeBlock = (removed: string[], added: string[]): void => {
     return;
   }
 
-  const addedToRemoved = pairAddedToRemoved(removed, added);
+  const { addedToRemoved, usedRemoved } = pairAddedToRemoved(removed, added);
   for (let j = 0; j < added.length; j++) {
     printOutcomeLine(added[j], addedToRemoved[j]);
+  }
+  for (let r = 0; r < removed.length; r++) {
+    if (!usedRemoved.has(r)) {
+      printRemovedLine(removed[r]);
+    }
   }
 };
 
@@ -132,7 +168,7 @@ const printHunk = (lines: string[]): void => {
     }
 
     if (line.startsWith(' ')) {
-      console.log(` ${dimUnchanged(line.slice(1))}`);
+      printDiffLine(' ', dimUnchanged(line.slice(1)));
       i++;
       continue;
     }
