@@ -1,0 +1,15 @@
+info:
+  name: get-image-png
+  type: http
+  seq: 11
+
+http:
+  method: GET
+  url: https://echo.kulala.app/image/png
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

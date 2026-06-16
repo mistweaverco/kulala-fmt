@@ -58,6 +58,30 @@ interface YamlRequestFile {
     params?: YamlParam[] | { query?: YamlParam[]; path?: YamlParam[] };
     body?: YamlBody;
   };
+  grpc?: {
+    url?: string;
+    method?: string;
+    methodType?: string;
+    message?: string;
+    headers?: YamlHeader[];
+  };
+  graphql?: {
+    method?: string;
+    url?: string;
+    headers?: YamlHeader[];
+    body?: {
+      query?: string;
+      variables?: string;
+    };
+  };
+  websocket?: {
+    url?: string;
+    headers?: YamlHeader[];
+    message?: {
+      type?: string;
+      data?: string;
+    };
+  };
   runtime?: {
     scripts?: YamlScript[];
     variables?: YamlVariable[];
@@ -124,9 +148,23 @@ const normalizeYamlVariableValue = (
   return '';
 };
 
-const normalizeParams = (
-  params: YamlRequestFile['http'] extends { params?: infer P } ? P : never,
-): BrunoYamlRequest['params'] => {
+const normalizeHeaders = (headers: YamlHeader[] | undefined): BrunoYamlRequest['headers'] => {
+  if (!headers?.length) return undefined;
+
+  const result = headers
+    .filter((header) => header.name)
+    .map((header) => ({
+      name: header.name!,
+      value: header.value ?? '',
+      enabled: header.disabled !== true,
+    }));
+
+  return result.length > 0 ? result : undefined;
+};
+
+type YamlHttpParams = NonNullable<NonNullable<YamlRequestFile['http']>['params']>;
+
+const normalizeParams = (params: YamlHttpParams | undefined): BrunoYamlRequest['params'] => {
   if (!params) return undefined;
 
   if (Array.isArray(params)) {
@@ -181,7 +219,7 @@ const normalizeBody = (body: YamlBody | undefined): BrunoYamlRequest['body'] => 
     case 'multipart-form':
       return {
         multipartForm: (Array.isArray(body.data) ? body.data : [])
-          .filter((entry) => entry.name)
+          .filter((entry): entry is YamlMultipartEntry => Boolean(entry.name))
           .map((entry) => ({
             name: entry.name!,
             value: entry.value ?? '',
@@ -242,6 +280,32 @@ const normalizeScripts = (
   return result;
 };
 
+const buildGrpcRequestUrl = (grpc: NonNullable<YamlRequestFile['grpc']>): string => {
+  const host = grpc.url ?? '';
+  const method = (grpc.method ?? '').replace(/^\//, '');
+  return method ? `${host} ${method}` : host;
+};
+
+type YamlRequestType = 'http' | 'grpc' | 'graphql' | 'websocket';
+
+const getYamlRequestType = (parsed: YamlRequestFile): YamlRequestType | null => {
+  const info = parsed.info;
+  if (!info?.type) return null;
+
+  switch (info.type) {
+    case 'http':
+      return parsed.http ? 'http' : null;
+    case 'grpc':
+      return parsed.grpc ? 'grpc' : null;
+    case 'graphql':
+      return parsed.graphql ? 'graphql' : null;
+    case 'websocket':
+      return parsed.websocket ? 'websocket' : null;
+    default:
+      return null;
+  }
+};
+
 const isRequestYaml = (parsed: unknown, filename: string): parsed is YamlRequestFile => {
   if (!isRecord(parsed)) return false;
   if ('opencollection' in parsed) return false;
@@ -249,10 +313,98 @@ const isRequestYaml = (parsed: unknown, filename: string): parsed is YamlRequest
   if ('variables' in parsed && !('info' in parsed) && !('http' in parsed)) return false;
 
   const info = parsed.info;
-  if (isRecord(info) && info.type === 'folder') return false;
-  if (isRecord(info) && info.type === 'script') return false;
+  if (isRecord(info) && (info.type === 'folder' || info.type === 'script')) return false;
 
-  return isRecord(parsed.info) && parsed.info.type === 'http' && isRecord(parsed.http);
+  return getYamlRequestType(parsed as YamlRequestFile) !== null;
+};
+
+const parseHttpRequest = (parsed: YamlRequestFile): BrunoYamlRequest => {
+  const scripts = normalizeScripts(parsed.runtime?.scripts);
+
+  return {
+    meta: {
+      name: parsed.info?.name,
+    },
+    http: {
+      method: parsed.http?.method,
+      url: parsed.http?.url,
+    },
+    headers: normalizeHeaders(parsed.http?.headers),
+    params: normalizeParams(parsed.http?.params),
+    vars: normalizeVariables(parsed.runtime?.variables),
+    body: normalizeBody(parsed.http?.body),
+    script: scripts.script,
+    tests: scripts.tests,
+  };
+};
+
+const parseGrpcRequest = (parsed: YamlRequestFile): BrunoYamlRequest => {
+  const grpc = parsed.grpc!;
+  const scripts = normalizeScripts(parsed.runtime?.scripts);
+
+  return {
+    meta: {
+      name: parsed.info?.name,
+    },
+    http: {
+      method: 'GRPC',
+      url: buildGrpcRequestUrl(grpc),
+    },
+    headers: normalizeHeaders(grpc.headers),
+    vars: normalizeVariables(parsed.runtime?.variables),
+    body: grpc.message ? { json: grpc.message } : undefined,
+    script: scripts.script,
+    tests: scripts.tests,
+  };
+};
+
+const parseGraphqlRequest = (parsed: YamlRequestFile): BrunoYamlRequest => {
+  const graphql = parsed.graphql!;
+  const scripts = normalizeScripts(parsed.runtime?.scripts);
+
+  return {
+    meta: {
+      name: parsed.info?.name,
+    },
+    http: {
+      method: 'GRAPHQL',
+      url: graphql.url,
+    },
+    headers: normalizeHeaders(graphql.headers),
+    vars: normalizeVariables(parsed.runtime?.variables),
+    body: graphql.body?.query
+      ? {
+          graphql: {
+            query: graphql.body.query,
+            variables: graphql.body.variables,
+          },
+        }
+      : undefined,
+    script: scripts.script,
+    tests: scripts.tests,
+  };
+};
+
+const parseWebsocketRequest = (parsed: YamlRequestFile): BrunoYamlRequest => {
+  const websocket = parsed.websocket!;
+  const scripts = normalizeScripts(parsed.runtime?.scripts);
+  const messageData =
+    typeof websocket.message?.data === 'string' ? websocket.message.data : undefined;
+
+  return {
+    meta: {
+      name: parsed.info?.name,
+    },
+    http: {
+      method: 'WEBSOCKET',
+      url: websocket.url,
+    },
+    headers: normalizeHeaders(websocket.headers),
+    vars: normalizeVariables(parsed.runtime?.variables),
+    body: messageData ? { json: messageData } : undefined,
+    script: scripts.script,
+    tests: scripts.tests,
+  };
 };
 
 export const BrunoYamlParser = {
@@ -303,30 +455,18 @@ export const BrunoYamlParser = {
       return null;
     }
 
-    const headers = (parsed.http?.headers ?? [])
-      .filter((header) => header.name)
-      .map((header) => ({
-        name: header.name!,
-        value: header.value ?? '',
-        enabled: header.disabled !== true,
-      }));
+    const requestType = getYamlRequestType(parsed);
+    if (!requestType) return null;
 
-    const scripts = normalizeScripts(parsed.runtime?.scripts);
-
-    return {
-      meta: {
-        name: parsed.info?.name,
-      },
-      http: {
-        method: parsed.http?.method,
-        url: parsed.http?.url,
-      },
-      headers,
-      params: normalizeParams(parsed.http?.params),
-      vars: normalizeVariables(parsed.runtime?.variables),
-      body: normalizeBody(parsed.http?.body),
-      script: scripts.script,
-      tests: scripts.tests,
-    };
+    switch (requestType) {
+      case 'http':
+        return parseHttpRequest(parsed);
+      case 'grpc':
+        return parseGrpcRequest(parsed);
+      case 'graphql':
+        return parseGraphqlRequest(parsed);
+      case 'websocket':
+        return parseWebsocketRequest(parsed);
+    }
   },
 };

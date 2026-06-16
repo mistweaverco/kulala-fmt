@@ -1,0 +1,25 @@
+info:
+  name: multipart-form-data
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: '{{API_BASE}}/post'
+  body:
+    type: multipart-form
+    data:
+      - name: name
+        type: text
+        value: Kulala
+      - name: textfile
+        type: file
+        value:
+          - testfile.txt
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -7,8 +7,9 @@ export interface BrunoEnvironment {
 const HTTP_CLIENT_ENV_SCHEMA = 'https://kulala.app/http-client.env.schema.json';
 const HTTP_CLIENT_PRIVATE_ENV_SCHEMA = 'https://kulala.app/http-client.private.env.schema.json';
 
-type HttpClientEnvFile = Record<string, Record<string, string>> & {
+type HttpClientEnvFile = {
   $schema?: string;
+  [environmentName: string]: Record<string, string> | string | undefined;
 };
 
 export function buildHttpClientEnvJson(environments: BrunoEnvironment[]): HttpClientEnvFile {

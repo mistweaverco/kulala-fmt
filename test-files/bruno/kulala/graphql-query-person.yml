@@ -1,0 +1,23 @@
+info:
+  name: graphql-query-person
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: https://swapi-graphql.netlify.app/graphql
+  body:
+    query: |-
+      query Person($id: ID) {
+        person(personID: $id) {
+          name
+        }
+      }
+    variables: '{"id": 1}'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

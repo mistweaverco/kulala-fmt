@@ -1,0 +1,14 @@
+info:
+  name: grpc-postman-echo
+  type: grpc
+  seq: 8
+
+grpc:
+  url: grpc.postman-echo.com:443
+  method: /HelloService/SayHello
+  methodType: unary
+  message: |-
+    {
+      "greeting": "Hello from Kulala!"
+    }
+  auth: inherit
