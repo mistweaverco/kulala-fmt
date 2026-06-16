@@ -1,0 +1,6 @@
+name: prod
+variables:
+  - name: API_BASE
+    value: https://echo.kulala.app
+  - secret: true
+    name: API_TOKEN_SECRET

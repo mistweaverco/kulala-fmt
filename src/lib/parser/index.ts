@@ -13,6 +13,7 @@ import {
   resolveCollectionName,
 } from './PostmanDocumentBuilder';
 import { BrunoDocumentParser } from './BrunoDocumentParser';
+import { buildHttpClientEnvJson, buildHttpClientPrivateEnvJson } from './BrunoEnvFiles';
 import { kulalaCore } from '../kulala-core';
 
 const OpenAPIParser = new OpenAPIDocumentParser();
@@ -223,12 +224,26 @@ const convertFromPostman = async (files: string[]): Promise<void> => {
 };
 
 const convertFromBruno = async (files: string[]): Promise<void> => {
-  const { documents, environmentNames, collectionName } = BrunoParser.parse(files[0]!);
-  for (const [idx, envName] of environmentNames.entries()) {
-    const build = await DocumentBuilder.build(documents[idx]!);
-    const outputFilename = `${collectionName}.${envName}.http`;
-    fs.writeFileSync(outputFilename, build, 'utf-8');
-    console.log(chalk.green(`Converted Bruno collection: ${files[0]} --> ${outputFilename}`));
+  const { document, environments, collectionName } = BrunoParser.parse(files[0]!);
+  const build = await DocumentBuilder.build(document);
+  const outputFilename = `${collectionName}.http`;
+  fs.writeFileSync(outputFilename, build, 'utf-8');
+  console.log(chalk.green(`Converted Bruno collection: ${files[0]} --> ${outputFilename}`));
+
+  if (environments.length > 0) {
+    const envFile = buildHttpClientEnvJson(environments);
+    fs.writeFileSync('http-client.env.json', JSON.stringify(envFile, null, 2) + '\n', 'utf-8');
+    console.log(chalk.green('Wrote environment variables --> http-client.env.json'));
+
+    const privateEnvFile = buildHttpClientPrivateEnvJson(environments);
+    if (privateEnvFile) {
+      fs.writeFileSync(
+        'http-client.private.env.json',
+        JSON.stringify(privateEnvFile, null, 2) + '\n',
+        'utf-8',
+      );
+      console.log(chalk.green('Wrote secret variables --> http-client.private.env.json'));
+    }
   }
 };
 
