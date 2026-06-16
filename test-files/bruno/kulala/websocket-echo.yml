@@ -1,0 +1,18 @@
+info:
+  name: websocket-echo
+  type: websocket
+  seq: 13
+
+websocket:
+  url: wss://ws.ifelse.io
+  message:
+    type: json
+    data: |-
+      {
+        "name": "Kulala"
+      }
+  auth: inherit
+
+settings:
+  timeout: 0
+  keepAliveInterval: 0
