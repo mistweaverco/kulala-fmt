@@ -1,0 +1,26 @@
+info:
+  name: simple-post-json
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: '{{API_BASE}}/post'
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Authorization
+      value: Bearter {{API_TOKEN_SECRET}}
+  body:
+    type: json
+    data: |-
+      {
+        "kulala": "family"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

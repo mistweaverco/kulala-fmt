@@ -1,4 +1,6 @@
 import { BrunoToJSONParser } from './BrunoToJson';
+import { BrunoYamlParser, type BrunoYamlRequest } from './BrunoYamlToJson';
+import type { BrunoEnvironment } from './BrunoEnvFiles';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, relative } from 'path';
 import type { Document, Block, Header, Variable } from './DocumentParser';
@@ -12,11 +14,13 @@ interface BrunoCollection {
 
 interface BrunoEnvironmentVars {
   vars?: Record<string, string>;
+  secrets?: Record<string, string>;
 }
 
-interface EnvironmentInfo {
-  name: string;
-  vars: Record<string, string>;
+interface ParseResult {
+  document: Document;
+  environments: BrunoEnvironment[];
+  collectionName: string;
 }
 
 interface BrunoParam {
@@ -53,7 +57,7 @@ interface BrunoRequest {
       query?: string;
       variables?: string;
     };
-    formUrlEncoded?: Record<string, string>;
+    formUrlEncoded?: Array<{ name: string; value: string; enabled?: boolean }>;
     multipartForm?: Array<{
       name: string;
       value: string;
@@ -67,11 +71,7 @@ interface BrunoRequest {
   tests?: string;
 }
 
-interface ParseResult {
-  documents: Document[];
-  environmentNames: string[];
-  collectionName: string;
-}
+type BrunoParsedRequest = BrunoRequest | BrunoYamlRequest;
 
 interface BrunoHeader {
   name: string;
@@ -83,11 +83,20 @@ let collectionInfo: BrunoCollection | undefined;
 
 export class BrunoDocumentParser {
   private parseEnvironmentBruFile(content: string): BrunoEnvironmentVars {
-    const lines = content.split('\n');
-    const environment: BrunoEnvironmentVars = { vars: {} };
+    const environment: BrunoEnvironmentVars = { vars: {}, secrets: {} };
     let isInVarsBlock = false;
 
-    for (const line of lines) {
+    const secretListMatch = content.match(/vars:secret\s*\[([\s\S]*?)\]/);
+    if (secretListMatch?.[1]) {
+      for (const entry of secretListMatch[1].split(',')) {
+        const name = entry.trim().replace(/^~/, '');
+        if (name) {
+          environment.secrets![name] = '';
+        }
+      }
+    }
+
+    for (const line of content.split('\n')) {
       const trimmedLine = line.trim();
 
       if (!trimmedLine) continue;
@@ -157,7 +166,7 @@ export class BrunoDocumentParser {
   }
 
   private buildRequestBlock(
-    bruRequest: BrunoRequest,
+    bruRequest: BrunoParsedRequest,
     folderPath: string,
     document: Document,
   ): Block {
@@ -175,7 +184,7 @@ export class BrunoDocumentParser {
 
     const block: Block = {
       requestSeparator: {
-        text: null,
+        text: bruRequest.meta?.name ?? folderPath ?? null,
       },
       metadata: [],
       comments: [],
@@ -186,14 +195,7 @@ export class BrunoDocumentParser {
     };
 
     if (folderPath) {
-      block.comments.push(`# Folder: ${folderPath}\n`);
-    }
-    if (bruRequest.meta?.name) {
-      block.comments.push(`# ${bruRequest.meta.name}\n`);
-      block.metadata.push({
-        key: 'name',
-        value: bruRequest.meta.name.replace(/\s+/g, '_').toUpperCase(),
-      });
+      block.comments.push(`# Converted from Bruno: ${folderPath}\n`);
     }
 
     this.applyVariables(block, document, bruRequest.vars?.req);
@@ -294,6 +296,21 @@ export class BrunoDocumentParser {
     return block;
   }
 
+  private isRequestFile(filename: string): boolean {
+    if (filename.endsWith('.bru')) return true;
+    if (filename === 'opencollection.yml' || filename === 'opencollection.yaml') return false;
+    if (filename === 'folder.yml' || filename === 'folder.yaml') return false;
+    return filename.endsWith('.yml') || filename.endsWith('.yaml');
+  }
+
+  private parseRequestFile(content: string, filename: string): BrunoParsedRequest | null {
+    if (filename.endsWith('.bru')) {
+      return BrunoToJSONParser.parse(content) as BrunoRequest;
+    }
+
+    return BrunoYamlParser.parseRequest(content, filename);
+  }
+
   private processDirectory(dirPath: string, document: Document): void {
     const items = readdirSync(dirPath);
 
@@ -307,10 +324,12 @@ export class BrunoDocumentParser {
 
       if (stat.isDirectory()) {
         this.processDirectory(fullPath, document);
-      } else if (item.endsWith('.bru')) {
+      } else if (this.isRequestFile(item)) {
         const content = readFileSync(fullPath, 'utf-8');
-        const bruRequest = BrunoToJSONParser.parse(content) as BrunoRequest;
-        const relativePath = relative(dirPath, fullPath).replace('.bru', '');
+        const bruRequest = this.parseRequestFile(content, item);
+        if (!bruRequest) continue;
+
+        const relativePath = relative(dirPath, fullPath).replace(/\.(bru|ya?ml)$/, '');
 
         const block = this.buildRequestBlock(bruRequest, relativePath, document);
         document.blocks.push(block);
@@ -318,8 +337,8 @@ export class BrunoDocumentParser {
     }
   }
 
-  private getEnvironments(dirPath: string): EnvironmentInfo[] {
-    const environments: EnvironmentInfo[] = [];
+  private getEnvironments(dirPath: string): BrunoEnvironment[] {
+    const environments: BrunoEnvironment[] = [];
     const environmentsDir = join(dirPath, 'environments');
 
     if (statSync(environmentsDir, { throwIfNoEntry: false })?.isDirectory()) {
@@ -331,9 +350,15 @@ export class BrunoDocumentParser {
           const environment = this.parseEnvironmentBruFile(envContent);
 
           environments.push({
-            name: file.replace('.bru', ''),
+            name: file.replace(/\.bru$/, ''),
             vars: environment.vars || {},
+            secrets: environment.secrets || {},
           });
+        } else if (file.endsWith('.yml') || file.endsWith('.yaml')) {
+          const envContent = readFileSync(join(environmentsDir, file), 'utf-8');
+          const environment = BrunoYamlParser.parseEnvironment(envContent, file);
+
+          environments.push(environment);
         }
       }
     }
@@ -347,40 +372,31 @@ export class BrunoDocumentParser {
       const content = readFileSync(brunoJsonPath, 'utf-8');
       return JSON.parse(content) as BrunoCollection;
     } catch {
-      return undefined;
+      try {
+        const openCollectionPath = join(dirPath, 'opencollection.yml');
+        const content = readFileSync(openCollectionPath, 'utf-8');
+        const collection = BrunoYamlParser.parseCollection(content);
+        if (!collection) return undefined;
+        return {
+          version: '1',
+          name: collection.name,
+          type: 'collection',
+        };
+      } catch {
+        return undefined;
+      }
     }
   }
 
   parse(collectionPath: string): ParseResult {
     collectionInfo = this.readCollectionInfo(collectionPath);
     const environments = this.getEnvironments(collectionPath);
-
-    if (environments.length === 0) {
-      const document: Document = { variables: [], blocks: [] };
-      this.processDirectory(collectionPath, document);
-      return {
-        documents: [document],
-        environmentNames: ['default'],
-        collectionName: collectionInfo?.name || 'bruno-collection',
-      };
-    }
-
-    const documents = environments.map((env) => {
-      const doc: Document = { variables: [], blocks: [] };
-      this.processDirectory(collectionPath, doc);
-
-      for (const [key, value] of Object.entries(env.vars)) {
-        if (!doc.variables.some((v) => v.key === key)) {
-          doc.variables.push({ key, value });
-        }
-      }
-
-      return doc;
-    });
+    const document: Document = { variables: [], blocks: [] };
+    this.processDirectory(collectionPath, document);
 
     return {
-      documents,
-      environmentNames: environments.map((env) => env.name),
+      document,
+      environments,
       collectionName: collectionInfo?.name || 'bruno-collection',
     };
   }
