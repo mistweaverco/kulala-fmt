@@ -32,7 +32,7 @@ const outdentString = (str: string) => {
  *
  */
 const grammar = ohm.grammar(`Bru {
-  BruFile = (meta | http | query | params | headers | auths | bodies | varsandassert | script | tests | docs)*
+  BruFile = (meta | http | query | params | headers | auths | bodies | varsandassert | script | tests | settings | docs)*
   auths = authawsv4 | authbasic | authbearer | authdigest | authNTLM | authOAuth2 | authwsse | authapikey
   bodies = bodyjson | bodytext | bodyxml | bodysparql | bodygraphql | bodygraphqlvars | bodyforms | body
   bodyforms = bodyformurlencoded | bodymultipart | bodyfile
@@ -118,6 +118,7 @@ const grammar = ohm.grammar(`Bru {
   scriptreq = "script:pre-request" st* "{" nl* textblock tagend
   scriptres = "script:post-response" st* "{" nl* textblock tagend
   tests = "tests" st* "{" nl* textblock tagend
+  settings = "settings" dictionary
   docs = "docs" st* "{" nl* textblock tagend
 }`);
 
@@ -740,6 +741,11 @@ const sem = grammar.createSemantics().addAttribute('ast', {
   tests(_1, _2, _3, _4, textblock, _5) {
     return {
       tests: outdentString(textblock.sourceString),
+    };
+  },
+  settings(_1, dictionary) {
+    return {
+      settings: mapPairListToKeyValPair(dictionary.ast),
     };
   },
   docs(_1, _2, _3, _4, textblock, _5) {
