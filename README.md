@@ -5,8 +5,11 @@
 # kulala-fmt
 
 [![npm][badge-npm]][link-npm]
-[![latest release][badge-github]][link-github]
+[![Made with love][badge-made-with-love]][contributors]
 [![Discord][badge-discord]][discord]
+[![Development status][badge-development-status]][development-status]
+[![Our manifesto][badge-our-manifesto]][our-manifesto]
+[![AI Policty][badge-ai-policy]][ai-policy]
 
 [Install](#install) •
 [Usage](#usage) •
@@ -18,6 +21,17 @@
 An opinionated 🦄 .http and .rest 🐼 files linter 💄 and formatter ⚡.
 
 <p></p>
+
+# Other tools 🔧 from the Kulala 🐼 family 🌈
+
+[Kulala for Neovim][kulala.nvim] •
+[Kulala CLI][kulala-cli] •
+[Kulala Desktop][kulala-desktop] •
+[Kulala for Visual Studio Code][kulala.vscode] •
+[Kulala Core][kulala-core]
+[Kulala Github Action][kulala-github-action]
+
+---
 
 </div>
 
@@ -286,6 +300,8 @@ return {
 }
 ```
 
+
+
 [logo]: https://raw.githubusercontent.com/mistweaverco/kulala-fmt/main/logo.svg
 [discord]: https://mistweaverco.com/discord
 [badge-discord]: https://mistweaverco.com/assets/badges/discord.svg
@@ -293,3 +309,17 @@ return {
 [link-github]: https://github.com/mistweaverco/kulala-fmt/releases/latest
 [badge-npm]: https://img.shields.io/npm/v/@mistweaverco/kulala-fmt?style=for-the-badge
 [link-npm]: https://www.npmjs.com/package/@mistweaverco/kulala-fmt
+[badge-made-with-love]: https://mistweaverco.com/assets/badges/made-with-love.svg
+[contributors]: https://github.com/mistweaverco/kulala-fmt/graphs/contributors
+[kulala.nvim]: https://github.com/mistweaverco/kulala.nvim
+[kulala-cli]: https://github.com/mistweaverco/kulala-cli
+[kulala-desktop]: https://github.com/mistweaverco/kulala-desktop
+[kulala.vscode]: https://github.com/mistweaverco/kulala.vscode
+[kulala-core]: https://github.com/mistweaverco/kulala-core
+[kulala-github-action]: https://github.com/mistweaverco/kulala-github-action
+[badge-development-status]: https://mistweaverco.com/assets/badges/development-status.svg
+[development-status]: https://mistweaverco.com/roadmap?filter=kulala-fmt
+[badge-ai-policy]: https://mistweaverco.com/assets/badges/ai-policy.svg
+[ai-policy]: https://mistweaverco.com/ai-policy
+[badge-our-manifesto]: https://mistweaverco.com/assets/badges/our-manifesto.svg
+[our-manifesto]: https://mistweaverco.com/manifesto
