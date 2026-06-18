@@ -12,7 +12,9 @@
 [![AI Policty][badge-ai-policy]][ai-policy]
 
 [Install](#install) •
-[Usage](#usage) •
+[Check](#check) •
+[Format/Fix](#format--fix) •
+[Convert](#convert) •
 [Configuration](#configuration) •
 [Development](#development)
 
