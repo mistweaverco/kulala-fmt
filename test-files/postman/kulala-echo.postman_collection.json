@@ -1,0 +1,105 @@
+{
+  "info": {
+    "_postman_id": "ee02e570-8c8e-4efa-9139-cf55474b8690",
+    "name": "kulala-echo",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "43975",
+    "_collection_link": "https://go.postman.co/collection/43975-ee02e570-8c8e-4efa-9139-cf55474b8690?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "get",
+      "request": {
+        "auth": {
+          "type": "oauth2",
+          "oauth2": [
+            {
+              "key": "client_authentication",
+              "value": "body",
+              "type": "string"
+            },
+            {
+              "key": "clientSecret",
+              "value": "kulala-core",
+              "type": "string"
+            },
+            {
+              "key": "clientId",
+              "value": "kulala-core",
+              "type": "string"
+            },
+            {
+              "key": "accessTokenUrl",
+              "value": "https://httpbun.com/oauth2/token",
+              "type": "string"
+            },
+            {
+              "key": "authUrl",
+              "value": "https://httpbun.com/oauth2/authorize",
+              "type": "string"
+            },
+            {
+              "key": "tokenName",
+              "value": "my-token",
+              "type": "string"
+            },
+            {
+              "key": "addTokenTo",
+              "value": "header",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://echo.kulala.app/get?var={{no-secret-var}}",
+          "protocol": "https",
+          "host": ["echo", "kulala", "app"],
+          "path": ["get"],
+          "query": [
+            {
+              "key": "var",
+              "value": "{{no-secret-var}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{a-secret-bearer-token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Custom-Header",
+            "value": "Kulala is family",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"foo\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://echo.kulala.app/post",
+          "protocol": "https",
+          "host": ["echo", "kulala", "app"],
+          "path": ["post"]
+        }
+      },
+      "response": []
+    }
+  ]
+}

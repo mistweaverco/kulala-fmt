@@ -1,4 +1,13 @@
 import type { Document, Block } from './DocumentParser';
+import type { BrunoEnvironment } from './BrunoEnvFiles';
+import {
+  applyPostmanAuth,
+  collectAuthHeaderSecretVars,
+  collectBlockText,
+  convertPostmanOAuth2,
+  extractTemplateVariables,
+  type PostmanAuth,
+} from './postmanAuth';
 
 interface PostmanVariable {
   key: string;
@@ -16,6 +25,7 @@ interface PostmanHeader {
 interface PostmanRequest {
   method: string;
   header: PostmanHeader[];
+  auth?: PostmanAuth;
   url: {
     raw: string;
     protocol?: string;
@@ -60,15 +70,17 @@ interface PostmanCollection {
   };
   item: (PostmanItem | PostmanItemGroup)[];
   variable?: PostmanVariable[];
+  auth?: PostmanAuth;
 }
 
 interface ParseResult {
   document: Document;
   collectionName: string;
+  environments: BrunoEnvironment[];
 }
 
 export class PostmanDocumentParser {
-  private buildRequestBlock(item: PostmanItem): Block {
+  private buildRequestBlock(item: PostmanItem, inheritedAuth?: PostmanAuth): Block {
     const block: Block = {
       requestSeparator: {
         text: null,
@@ -117,6 +129,9 @@ export class PostmanDocumentParser {
         });
     }
 
+    const effectiveAuth = item.request.auth ?? inheritedAuth;
+    applyPostmanAuth(block, effectiveAuth);
+
     // Handle request body
     if (item.request.body?.mode === 'raw' && item.request.body.raw) {
       if (block.request) {
@@ -152,6 +167,7 @@ export class PostmanDocumentParser {
   private processItems(
     items: (PostmanItem | PostmanItemGroup)[],
     document: Document,
+    inheritedAuth?: PostmanAuth,
     parentPath: string = '',
   ): void {
     for (const item of items) {
@@ -171,10 +187,10 @@ export class PostmanDocumentParser {
             responseRedirect: null,
           });
         }
-        this.processItems(item.item, document, newPath);
+        this.processItems(item.item, document, inheritedAuth, newPath);
       } else {
         // Process request
-        const block = this.buildRequestBlock(item);
+        const block = this.buildRequestBlock(item, inheritedAuth);
         document.blocks.push(block);
       }
     }
@@ -184,30 +200,108 @@ export class PostmanDocumentParser {
     return 'item' in item;
   }
 
+  private collectAuths(collection: PostmanCollection): PostmanAuth[] {
+    const auths: PostmanAuth[] = [];
+    if (collection.auth) {
+      auths.push(collection.auth);
+    }
+
+    const walk = (items: (PostmanItem | PostmanItemGroup)[]): void => {
+      for (const item of items) {
+        if (this.isItemGroup(item)) {
+          walk(item.item);
+        } else if (item.request.auth) {
+          auths.push(item.request.auth);
+        }
+      }
+    };
+
+    walk(collection.item);
+    return auths;
+  }
+
+  private buildEnvironments(collection: PostmanCollection, document: Document): BrunoEnvironment[] {
+    const vars: Record<string, string> = {};
+    const secrets: Record<string, string> = {};
+    const auth: BrunoEnvironment['auth'] = {};
+    const authPrivate: BrunoEnvironment['authPrivate'] = {};
+
+    if (collection.variable) {
+      collection.variable
+        .filter((variable) => variable.enabled !== false)
+        .forEach((variable) => {
+          vars[variable.key] = variable.value;
+        });
+    }
+
+    for (const postmanAuth of this.collectAuths(collection)) {
+      const oauth = convertPostmanOAuth2(postmanAuth);
+      if (!oauth) continue;
+
+      auth[oauth.authId] = oauth.publicConfig;
+      if (Object.keys(oauth.privateConfig).length > 0) {
+        authPrivate[oauth.authId] = oauth.privateConfig;
+      }
+    }
+
+    const authHeaderSecrets = collectAuthHeaderSecretVars(document.blocks);
+    const referencedVars = new Set<string>();
+
+    for (const block of document.blocks) {
+      for (const text of collectBlockText(block)) {
+        for (const variable of extractTemplateVariables(text)) {
+          referencedVars.add(variable);
+        }
+      }
+    }
+
+    for (const variable of referencedVars) {
+      if (authHeaderSecrets.has(variable)) {
+        secrets[variable] = secrets[variable] ?? '';
+        continue;
+      }
+
+      if (!(variable in vars) && !(variable in secrets)) {
+        vars[variable] = '';
+      }
+    }
+
+    const hasContent =
+      Object.keys(vars).length > 0 ||
+      Object.keys(secrets).length > 0 ||
+      Object.keys(auth ?? {}).length > 0 ||
+      Object.keys(authPrivate ?? {}).length > 0;
+
+    if (!hasContent) {
+      return [];
+    }
+
+    return [
+      {
+        name: collection.info.name || 'default',
+        vars,
+        secrets,
+        auth,
+        authPrivate,
+      },
+    ];
+  }
+
   parse(collection: PostmanCollection): ParseResult {
     const document: Document = {
       variables: [],
       blocks: [],
     };
 
-    // Add collection variables
-    if (collection.variable) {
-      collection.variable
-        .filter((v) => v.enabled !== false)
-        .forEach((v) => {
-          document.variables.push({
-            key: v.key,
-            value: v.value,
-          });
-        });
-    }
-
     // Process all requests in the collection
-    this.processItems(collection.item, document);
+    this.processItems(collection.item, document, collection.auth);
+
+    const environments = this.buildEnvironments(collection, document);
 
     return {
       document: document,
       collectionName: collection.info.name,
+      environments,
     };
   }
 }
