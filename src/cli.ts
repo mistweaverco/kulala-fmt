@@ -13,21 +13,21 @@ program
   .command('fix')
   .alias('format')
   .description('Format files')
-  .argument('[files]', 'files to include', null)
+  .argument('[files...]', 'files or directories to include')
   .option('--no-body', 'skip formatting the body')
   .option('--stdin', 'read input from stdin, print output to stdout', false)
-  .action(async (files, options) => {
+  .action(async (files: string[], options) => {
     await format(files, options);
   });
 
 program
   .command('check')
   .description('Check if files are well formatted')
-  .argument('[files]', 'files to include', null)
+  .argument('[files...]', 'files or directories to include')
   .option('-q, --quiet', 'suppress diff output', false)
   .option('--no-body', 'skip formatting the body when checking')
   .option('--stdin', 'read input from stdin', false)
-  .action(async (files, options) => {
+  .action(async (files: string[], options) => {
     await check(files, options);
   });
 

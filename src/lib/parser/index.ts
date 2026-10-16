@@ -111,16 +111,23 @@ const checkStdin = async (options: { body: boolean; quiet: boolean }) => {
   }
 };
 
+const collectInputs = (input: string | string[] | null | undefined): string[] => {
+  if (!input || (Array.isArray(input) && input.length === 0)) {
+    return [process.cwd()];
+  }
+  return Array.isArray(input) ? input : [input];
+};
+
 /**
- * Checks the validity of HTTP files in the given directory.
+ * Checks the validity of HTTP files in the given paths.
  *
- * @param {string} dirPath The directory path to check.
+ * @param {string | string[] | null} dirPath Files or directories to check.
  * @param {{ quiet: boolean; body: boolean }} options The options to use.
  * @param {string[]} extensions An array of file extensions to filter by (e.g., ['.http', '.rest']).
  * @returns {CheckedFiles[]} An array of CheckedFiles objects.
  */
 export const check = async (
-  dirPath: string | null,
+  dirPath: string | string[] | null,
   options: { quiet: boolean; body: boolean; stdin: boolean },
   extensions?: string[],
 ): Promise<void> => {
@@ -129,14 +136,13 @@ export const check = async (
     return;
   }
 
-  if (!dirPath) {
-    dirPath = process.cwd();
-  }
   if (!extensions) {
     extensions = ['.http', '.rest'];
   }
   let errorHappened = false;
-  const files = fileWalker(dirPath, extensions);
+  const files = [
+    ...new Set(collectInputs(dirPath).flatMap((input) => fileWalker(input, extensions))),
+  ].sort();
   for (const file of files) {
     const [isPretty, content, build] = await isAlreadyPretty(file, options);
     if (isPretty === false) {
@@ -144,6 +150,7 @@ export const check = async (
       if (!options.quiet) {
         Diff(build, content, { filepath: file });
       }
+      errorHappened = true;
     } else if (isPretty === null) {
       console.log(chalk.red(`Error parsing file: ${file}`));
       errorHappened = true;
@@ -171,7 +178,7 @@ export const formatStdin = async (formatBody: boolean) => {
 };
 
 export const format = async (
-  dirPath: string | null,
+  dirPath: string | string[] | null,
   options: { body: boolean; stdin: boolean },
   extensions?: string[],
 ): Promise<void> => {
@@ -180,14 +187,13 @@ export const format = async (
     return;
   }
 
-  if (!dirPath) {
-    dirPath = process.cwd();
-  }
   if (!extensions) {
     extensions = ['.http', '.rest'];
   }
   let errorHappened = false;
-  const files = fileWalker(dirPath, extensions);
+  const files = [
+    ...new Set(collectInputs(dirPath).flatMap((input) => fileWalker(input, extensions))),
+  ].sort();
   for (const file of files) {
     const isPretty = await makeFilePretty(file, options.body);
     if (isPretty === false) {
